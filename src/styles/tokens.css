@@ -1,0 +1,88 @@
+/* ==========================================================================
+   Universal Timetable Core - デザイントークン（脱AI化ソリッド＆軽量モーション）
+   ========================================================================== */
+:root {
+  /* Core Palette: Non-pure-black Slate Ink & High-Contrast Technical Surface */
+  --fes-bg: #f2f3f6;
+  --fes-surface: #ffffff;
+  --fes-surface-subtle: #e9ecf2;
+  --fes-ink: #11131a;
+  --fes-ink-soft: #262936;
+  --fes-muted: #5a6073;
+  --fes-border: #d5d9e4;
+  /* 枠線・キーキャップ影は文字の墨（--fes-ink）より一段柔らかい墨にして、全体の硬さを和らげる */
+  --fes-border-strong: #3b3f4d;
+  --fes-line: #3b3f4d;
+
+  /* Theme Dynamic Colors (Overridden by Spreadsheet Config if provided) */
+  --fes-main: #5b21b6;
+  --fes-main-ink: #ffffff;
+  --fes-main-light: #f3e8ff;
+  --fes-accent: #facc15;
+  --fes-accent-ink: #11131a;
+  --fes-danger: #e11d48;
+  --fes-danger-bg: #fff1f2;
+
+  /* 派生色：スプレッドシートで差し替えたメイン／アクセント色からも自動で作られる
+     ボタン等の「面」はほんの少し白を混ぜて柔らかく、細い文字・小バッジは元のビビッド色のまま */
+  --fes-accent-soft: color-mix(in oklab, var(--fes-accent), white 24%);
+  --fes-main-tint: color-mix(in oklab, var(--fes-main), white 62%);
+  --fes-main-tint-strong: color-mix(in oklab, var(--fes-main), white 82%);
+  /* 柔らかい面のキーキャップ影（真っ黒ではなく少し薄い黒） */
+  --fes-key-shadow-soft: rgba(0, 0, 0, 0.42);
+
+  /* Tailwind互換エイリアス */
+  --main-color: var(--fes-main);
+  --accent-color: var(--fes-accent);
+
+  /* Shape Language: Concentric Low-Radius Keycap Hierarchy */
+  --radius-sharp: 0px;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-pill: 9999px;
+  --fes-radius: var(--radius-xs);
+  --fes-border-w: 1px;
+
+  /* Subtle Real Elevation (Hard offset neo-brutalist shadow abolished) */
+  --fes-shadow-subtle: 0 1px 2px rgba(17, 19, 26, 0.06);
+  --fes-shadow: 0 6px 16px -4px rgba(17, 19, 26, 0.16), 0 2px 4px -1px rgba(17, 19, 26, 0.06);
+  --fes-shadow-sm: 0 2px 6px -1px rgba(17, 19, 26, 0.1);
+  --shadow-modal: 0 24px 48px -12px rgba(10, 12, 20, 0.45);
+
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* 活版チケット用の明朝。保存PNG（Webフォント非埋め込み）では端末の明朝で代用される */
+  --font-mincho: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', YuMincho, 'Noto Serif JP', serif;
+  /* 活版チケットの題字・番号・ハッシュタグ用のレトロな和文書体 */
+  --font-display: 'Kaisei Decol', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+
+  /* My ハシゴテーブル（チケット）の2版刷り：箔の版（外枠・題字など）／インクの版（本文）／紙
+     スプレッドシートの「チケット箔の色」等で差し替えられる */
+  --pass-foil: #8a1c2b;
+  --pass-ink: #252a40;
+  --pass-paper: #f4eedf;
+
+  /* Motion Tokens: Meta Astryx Asymmetric Easing (Fast start, smooth landing / Snappy exit) */
+  --duration-fast: 140ms;
+  --duration-medium: 250ms;
+  --duration-exit: 135ms;
+  --ease-entrance: cubic-bezier(0.24, 1, 0.4, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.6, 0.6);
+  /* 物理ばね系イージング（linear()）：最初の 1/3 でシュッと寄せ、残りでぬるっと着地 */
+  /* soft: 行き過ぎ約 2.5%（大きい面の移動・拡大用） */
+  --ease-spring-soft: linear(0, 0.06 2.5%, 0.22 6%, 0.5 12%, 0.76 19%, 0.92 27%, 1.005 36%, 1.025 45%, 1.02 55%, 1.008 68%, 1);
+  /* pop: 行き過ぎ約 18%（小さなバッジ・数字のポン用） */
+  --ease-spring-pop: linear(0, 0.18 4%, 0.6 11%, 1.06 20%, 1.18 27%, 1.16 33%, 1.04 42%, 0.97 51%, 0.985 60%, 1.005 72%, 1);
+
+  /* 標準レイアウト寸法（標準サイズ一本化） */
+  --col-width: 138px;
+  --hour-height: 74px;
+  --card-pad: 6px 7px;
+  --title-size: 12px;
+  --time-size: 11px;
+  --col-header-h: 320px;
+  --scrollbar-thumb: #9ca3b8;
+  --scrollbar-track: #e9ecf2;
+}

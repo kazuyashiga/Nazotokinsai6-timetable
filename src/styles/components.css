@@ -1,0 +1,1693 @@
+/* ==========================================================================
+   下部選択バー・ポップオーバー・モーダル群（脱AI・3Dチルト・Top-Layer Motion・高品位パス）
+   ========================================================================== */
+
+/* 下部選択バー（0件時は非表示、選択時にせり出す） */
+.selection-bar {
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: 10px;
+  z-index: 50;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--fes-ink);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-md);
+  padding: 8px 10px 9px;
+  box-shadow: var(--shadow-modal);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  transform: translateY(0);
+  opacity: 1;
+  /* 登場：ばねで下からシュッとせり上がり、わずかに行き過ぎてから着地 */
+  transition:
+    transform 560ms var(--ease-spring-soft),
+    opacity 160ms ease-out;
+}
+
+.selection-bar.is-hidden {
+  transform: translateY(calc(100% + 24px));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--duration-exit) var(--ease-exit),
+    opacity var(--duration-exit) var(--ease-exit);
+}
+
+/* 中身（チップ列 → ボタン列）が本体を追いかけて少し遅れて上がる */
+@media (prefers-reduced-motion: no-preference) {
+  .selection-bar > .selected-chips-row,
+  .selection-bar > .selection-cta-row {
+    transition:
+      translate 480ms var(--ease-spring-soft),
+      opacity 200ms ease-out;
+  }
+
+  .selection-bar > .selected-chips-row {
+    transition-delay: 50ms;
+  }
+
+  .selection-bar > .selection-cta-row {
+    transition-delay: 100ms;
+  }
+
+  .selection-bar.is-hidden > .selected-chips-row,
+  .selection-bar.is-hidden > .selection-cta-row {
+    translate: 0 12px;
+    opacity: 0;
+    transition-duration: 100ms;
+    transition-delay: 0ms;
+  }
+
+  /* バー表示中に追加されたチップ */
+  .selected-chip.is-entering {
+    animation: chip-enter 420ms var(--ease-spring-soft) both;
+  }
+}
+
+@keyframes chip-enter {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+    scale: 0.9;
+  }
+}
+
+/* 公演数の差し替え用（JS で下からポンと入れ替える） */
+.cta-count {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selection-bar,
+  .selection-bar.is-hidden {
+    transform: none;
+    transition: opacity 100ms ease;
+  }
+}
+
+.selection-conflict-alert {
+  background: #7f1d1d;
+  color: #fecaca;
+  border: 1px solid #f87171;
+  border-radius: var(--radius-xs);
+  padding: 4px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selected-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 1px;
+}
+
+.selected-chip {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #232736;
+  border: 1px solid #475569;
+  border-radius: var(--radius-xs);
+  padding: 3px 6px 3px 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #ffffff;
+  max-width: 174px;
+}
+
+.selected-chip.is-conflict {
+  background: rgba(225, 29, 72, 0.28);
+  border-color: #fb7185;
+  color: #ffe4e6;
+}
+
+.chip-time {
+  color: var(--fes-accent);
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+.selected-chip.is-conflict .chip-time {
+  color: #fda4af;
+}
+
+.chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chip-remove {
+  width: 15px;
+  height: 15px;
+  border-radius: 2px;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: none;
+}
+
+.selection-cta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.selection-reset-btn {
+  border: 1.5px solid #64748b;
+  background: #232736;
+  color: #f1f5f9;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 2px 0 #000000;
+  padding: 7px 10px;
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.selection-reset-btn:hover {
+  background: #2e3346;
+  color: #ffffff;
+}
+
+.selection-open-btn {
+  flex: 1;
+  height: 38px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-accent-soft);
+  color: var(--fes-ink);
+  box-shadow: 0 2.5px 0 var(--fes-key-shadow-soft);
+  font-size: 12.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+}
+
+/* ==========================================================================
+   公演詳細（リング型）：ポスターのまわりに5つの情報。
+   ポスター自身のぼかし＋薄い膜は、リングが収まる一回り大きいパネルだけに敷く（全画面にしない）。
+   パネルの外は表が見えたまま：次に見たい公演の位置が分かり、別画面に移ったとも思わせない。
+   開く・閉じる動きは SpecPopup.js（WAAPI）が受け持つ
+   ========================================================================== */
+[popover].spec-popover {
+  --ring-ink: #ffffff;
+  --ring-ink-soft: rgba(255, 255, 255, 0.84);
+  --ring-line: rgba(255, 255, 255, 0.55);
+  /* 膜は薄め（フェスの明るさを残す）。読みやすさは文字の影で補う */
+  --ring-veil: rgba(8, 10, 16, 0.4);
+  --ring-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 12px rgba(0, 0, 0, 0.45);
+  --ring-font: 'Zen Kaku Gothic New', var(--font-sans);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ring-ink);
+  overflow: hidden;
+  /* パネルの外は下の表へ素通し（外のタップは SpecPopup が拾って、閉じるか別の公演へ切り替える） */
+  pointer-events: none;
+}
+
+[popover].spec-popover::backdrop {
+  background: transparent;
+}
+
+/* ぼかしのパネル：位置と大きさ（--panel-*）は SpecPopup がリングの実寸から決める */
+.ring-bg {
+  position: absolute;
+  left: var(--panel-x, 0px);
+  top: var(--panel-y, 0px);
+  width: var(--panel-w, 100%);
+  height: var(--panel-h, 100%);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: 0 22px 48px -12px rgba(10, 12, 20, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.14);
+  pointer-events: auto;
+}
+
+.ring-bg-blur {
+  position: absolute;
+  inset: -60px;
+  background-color: #1a1c26;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(30px) saturate(1.55) brightness(1.08);
+  transform: scale(1.12);
+}
+
+.ring-bg-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--ring-veil);
+}
+
+.ring-close {
+  position: absolute;
+  z-index: 3;
+  /* パネルの右上の内側 */
+  top: calc(var(--panel-y, 0px) + 10px);
+  left: calc(var(--panel-x, 0px) + var(--panel-w, 100%) - 50px);
+  width: 40px;
+  pointer-events: auto;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ring-line);
+  border-radius: var(--radius-xs);
+  background: rgba(10, 12, 18, 0.22);
+  color: var(--ring-ink);
+  cursor: pointer;
+}
+
+.ring-close:active {
+  background: rgba(10, 12, 18, 0.4);
+}
+
+.ring-close:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.ring-center {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 56px) 8px calc(env(safe-area-inset-bottom, 0px) + 24px);
+}
+
+/* 逆五角形：左に2つ・右に2つ・下にタグ。--side / --pw / --ph は SpecPopup が画面に合わせて決める */
+.ring-layout {
+  --side: 46px;
+  --pw: 260px;
+  --ph: 368px;
+  display: grid;
+  grid-template-columns: var(--side) var(--pw) var(--side);
+  grid-template-rows: var(--ph) auto;
+  column-gap: 8px;
+  row-gap: 18px;
+  justify-items: center;
+  pointer-events: auto;
+}
+
+.ring-side {
+  grid-row: 1;
+  height: var(--ph);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ring-side.is-left { grid-column: 1; }
+.ring-side.is-right { grid-column: 3; }
+
+/* 縦書きの札。縦書きでは flex の column が「右から左へ列を並べる」向き（見出しの列→中身の列） */
+.ring-slot {
+  position: relative;
+  z-index: 1;
+  writing-mode: vertical-rl;
+  height: calc(var(--ph) / 2 - 8px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  color: var(--ring-ink);
+  text-shadow: var(--ring-text-shadow);
+}
+
+.ring-side .ring-slot:last-child {
+  align-items: flex-end;
+}
+
+.ring-slot-label {
+  font: 700 11.5px/1 var(--ring-font);
+  color: var(--ring-ink-soft);
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.ring-slot-value {
+  font: 900 18px/1.15 var(--ring-font);
+  letter-spacing: 0.04em;
+}
+
+/* 縦中横（2桁まで）と、1字ずつ縦に積む（3桁以上） */
+.ring-tcy { text-combine-upright: all; }
+.ring-upr { text-orientation: upright; letter-spacing: -0.02em; }
+
+.ring-diff-num {
+  font-size: 32px;
+  line-height: 1;
+  text-orientation: upright;
+}
+
+.ring-diff-max {
+  font-size: 13px;
+  color: var(--ring-ink-soft);
+}
+
+.ring-gauge {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 3px;
+  margin-block-start: 7px;
+  vertical-align: middle;
+}
+
+/* 目盛りの太さは欄の高さに合わせて縮める（小さい画面でも難易度を1列に収める） */
+.ring-gauge i {
+  width: 12px;
+  height: clamp(3px, calc((var(--ph) / 2 - 90px) / 10 - 3px), 6px);
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.ring-gauge i.is-on {
+  background: #ffffff;
+}
+
+.ring-tags {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: calc(var(--pw) + var(--side) * 2 + 16px);
+}
+
+.ring-tag {
+  font: 700 14px/1 var(--ring-font);
+  color: var(--ring-ink);
+  border: 1px solid var(--ring-line);
+  background: rgba(10, 12, 18, 0.26);
+  border-radius: var(--radius-xs);
+  padding: 7px 10px;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* ポスター（指でなぞると傾いて光る） */
+.ring-poster {
+  grid-column: 2;
+  grid-row: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.spec-tilt-stage {
+  perspective: 900px;
+  touch-action: none;
+  user-select: none;
+}
+
+.spec-tilt-card {
+  --tilt-rx: 0deg;
+  --tilt-ry: 0deg;
+  --tilt-scale: 1;
+  --glare-x: 50%;
+  --glare-y: 50%;
+  --glare-opacity: 0;
+  position: relative;
+  display: block;
+  width: var(--pw);
+  aspect-ratio: 300 / 424;
+  overflow: hidden;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-xs);
+  background: #10121c;
+  box-shadow: 0 22px 44px -14px rgba(0, 0, 0, 0.7);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spec-tilt-card {
+    transform: rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry)) scale3d(var(--tilt-scale), var(--tilt-scale), 1);
+    transform-style: preserve-3d;
+    transition: transform 280ms var(--ease-entrance);
+    will-change: transform;
+  }
+
+  .spec-tilt-card.is-tilting {
+    transition: transform 60ms linear;
+  }
+}
+
+/* 枠と形の合わないポスターの余白を、同じポスターのぼかしで埋める */
+.ring-poster-fill {
+  position: absolute;
+  inset: -20px;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(14px) saturate(1.2);
+  transform: scale(1.1);
+}
+
+.spec-tilt-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.spec-tilt-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.spec-tilt-glare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--glare-opacity, 0);
+  transition: opacity 220ms var(--ease-entrance);
+  background: radial-gradient(
+    circle at var(--glare-x, 50%) var(--glare-y, 50%),
+    rgba(255, 255, 255, 0.56) 0%,
+    color-mix(in srgb, var(--fes-accent) 24%, transparent) 30%,
+    color-mix(in srgb, var(--fes-main) 20%, transparent) 58%,
+    transparent 82%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Native <dialog> Top-Layer Enter / Exit Transitions */
+dialog.fes-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+  max-width: min(95vw, 440px);
+  width: 100%;
+  margin: auto;
+  overflow: visible;
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--duration-exit);
+  transition-timing-function: var(--ease-exit);
+  transition-behavior: allow-discrete;
+}
+
+dialog.fes-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.fes-dialog::backdrop {
+  background: rgba(11, 13, 20, 0.72);
+  backdrop-filter: blur(5px);
+  overscroll-behavior: contain;
+  opacity: 0;
+  transition-property: opacity, display, overlay;
+  transition-duration: var(--duration-exit);
+  transition-timing-function: var(--ease-exit);
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.fes-dialog {
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+:is(dialog.fes-dialog[open]):where(:not([data-closing])) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition-duration: var(--duration-medium);
+  transition-timing-function: var(--ease-entrance);
+}
+
+:is(dialog.fes-dialog[open]):where(:not([data-closing]))::backdrop {
+  opacity: 1;
+  transition-duration: var(--duration-medium);
+  transition-timing-function: var(--ease-entrance);
+}
+
+@starting-style {
+  :is(dialog.fes-dialog[open]):where(:not([data-closing])) {
+    opacity: 0;
+  }
+
+  :is(dialog.fes-dialog[open]):where(:not([data-closing]))::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @starting-style {
+    :is(dialog.fes-dialog[open]):where(:not([data-closing])) {
+      transform: translateY(10px) scale(0.985);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.fes-dialog,
+  dialog.fes-dialog::backdrop {
+    transform: none;
+    transition-duration: 100ms;
+  }
+}
+
+.dialog-card {
+  background: var(--fes-surface);
+  border: 1.5px solid var(--fes-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-modal);
+  padding: 15px;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  color: var(--fes-ink);
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--fes-border);
+  padding-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.dialog-head-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.back-pill-btn {
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-surface);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dialog-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.close-square-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-surface);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 15px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.close-square-btn:hover {
+  background: var(--fes-surface-subtle);
+}
+
+.dialog-body {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 2px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ==========================================================================
+   「自分の予定・ハシゴ表」一覧ビュー ＆ スタッガーアニメーション
+   ========================================================================== */
+@keyframes stagger-item-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 4px;
+}
+
+.tl-card {
+  background: var(--fes-surface);
+  border: 1px solid var(--fes-border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--fes-shadow-subtle);
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tl-card,
+  .gap-cand-item {
+    animation: stagger-item-enter 210ms var(--ease-entrance) both;
+    animation-delay: calc(min(var(--stagger-index, 0), 8) * 20ms);
+  }
+}
+
+.tl-card.is-conflict {
+  border-color: var(--fes-danger);
+  background: var(--fes-danger-bg);
+}
+
+.tl-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tl-time-pill {
+  background: var(--fes-ink);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.tl-card.is-conflict .tl-time-pill {
+  background: var(--fes-danger);
+}
+
+.tl-room-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--fes-main-light);
+  color: var(--fes-main);
+  border: 1px solid #d8b4fe;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1.5px 6px;
+  border-radius: var(--radius-pill);
+}
+
+.tl-remove-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-surface);
+  color: var(--fes-ink);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tl-remove-btn:hover {
+  border-color: var(--fes-danger);
+  color: var(--fes-danger);
+}
+
+.tl-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 900;
+  color: var(--fes-ink);
+}
+
+.tl-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--fes-muted);
+}
+
+.tl-reserve-btn {
+  padding: 3px 9px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: #ffffff;
+  color: var(--fes-ink);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 10px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.tl-conflict-banner {
+  background: var(--fes-danger-bg);
+  color: #9f1239;
+  border: 1px solid var(--fes-danger);
+  border-radius: var(--radius-xs);
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gap-block {
+  border: 1px dashed var(--fes-main);
+  background: #f9f7ff;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gap-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--fes-main);
+}
+
+.gap-header-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gap-count-badge {
+  background: var(--fes-main);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1.5px 7px;
+  border-radius: var(--radius-pill);
+}
+
+.gap-cand-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gap-cand-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--fes-border-strong);
+  border-radius: var(--radius-xs);
+  background: #ffffff;
+}
+
+.gap-cand-main {
+  min-width: 0;
+}
+
+.gap-cand-title {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: var(--fes-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gap-cand-meta {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--fes-muted);
+}
+
+.gap-add-btn {
+  flex-shrink: 0;
+  background: var(--fes-accent-soft);
+  color: var(--fes-ink);
+  border: 1.5px solid var(--fes-border-strong);
+  border-radius: var(--radius-xs);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  padding: 4px 9px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.dialog-footer-actions {
+  flex-shrink: 0;
+  border-top: 1px solid var(--fes-border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--fes-surface);
+}
+
+.btn-gap-search {
+  height: 38px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-main);
+  background: var(--fes-main-light);
+  color: var(--fes-main);
+  box-shadow: 0 2px 0 var(--fes-main);
+  font-size: 11.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-gap-search:hover {
+  background: #ebd7ff;
+}
+
+.btn-go-pass {
+  height: 42px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-ink-soft);
+  color: #ffffff;
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 12.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   ナゾトキあるある Now Loading オーバーレイ（不要2文言なし・待機文言のみ）
+   ========================================================================== */
+.gap-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(14, 16, 24, 0.94);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  gap: 16px;
+}
+
+.loading-spinner-box {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-accent);
+  background: color-mix(in srgb, var(--fes-main) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fes-accent);
+}
+
+@keyframes slow-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-spin-svg {
+  animation: slow-spin 1.8s linear infinite;
+}
+
+.loading-quirky-msg {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.5;
+  color: #ffffff;
+}
+
+/* ==========================================================================
+   Pillar 3: My ハシゴテーブル ― 型抜きの紙 × 活版印刷 × 箔押し（2版刷り）
+   - 箔の版（--pass-foil）：外枠・題字箱・リボン・題字・番号・ハッシュタグ・星
+   - インクの版（--pass-ink）：本文・消印
+   - 正面（無操作）では「ただの活版インク」、傾けると箔の版だけが角度に応じて光る
+   - 外枠と題字箱は、四隅とミシン目の切り欠きに沿って曲がる線。TicketView が紙の実寸で描く
+   - 配色はスプレッドシート（チケット箔の色／文字の色／紙の色）で差し替えられる
+   - PNG は常に「正面・光なし」で書き出し、型抜きの形で透過させる
+   - 縦グラデや上辺の白ハイライト、一辺だけの線は使わない（箔の光は斜め 115deg のみ）
+   ========================================================================== */
+@property --foil {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --sheen {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+
+.pass-stage {
+  /* 詳細カードと同じ 3D チルト。縦スクロールは妨げない（横方向の操作で傾く） */
+  perspective: 1100px;
+  touch-action: pan-y;
+  /* 傾けた紙の手前の辺は遠近で数 px 大きく見える。そのはみ出しが本文の欄のスクロール範囲に数えられると、
+     スクロールバーが出て紙の幅が縮み、文字の折り返しと外枠の描き直しが傾けるたびに起きる。台で切って防ぐ
+     （overflow-clip-margin で余白を残すと、その分がまたスクロール範囲に数えられるので付けない） */
+  overflow: clip;
+  /* 型抜きの形に沿った影（紙は形でマスクするため box-shadow ではなく drop-shadow） */
+  filter: drop-shadow(0 8px 12px rgba(42, 34, 51, 0.22));
+}
+
+.pass-card {
+  --paper: var(--pass-paper);
+  --ink: var(--pass-ink);
+  --ink-soft: color-mix(in oklab, var(--pass-ink), var(--pass-paper) 42%);
+  --foil-ink: var(--pass-foil);
+  --tilt-rx: 0deg;
+  --tilt-ry: 0deg;
+  --foil: 0;
+  --sheen: 50%;
+  /* 箔の面：箔の版の色から、暗部〜光の帯〜暗部を斜めに作る（光の位置は --sheen） */
+  --foil-sheet: linear-gradient(115deg,
+    color-mix(in oklab, var(--pass-foil), #000 45%) 0%,
+    color-mix(in oklab, var(--pass-foil), #000 12%) calc(var(--sheen) - 26%),
+    color-mix(in oklab, var(--pass-foil), #fff 28%) calc(var(--sheen) - 9%),
+    color-mix(in oklab, var(--pass-foil), #fff 80%) var(--sheen),
+    color-mix(in oklab, var(--pass-foil), #fff 22%) calc(var(--sheen) + 9%),
+    color-mix(in oklab, var(--pass-foil), #000 10%) calc(var(--sheen) + 26%),
+    color-mix(in oklab, var(--pass-foil), #000 45%) 100%);
+
+  position: relative;
+  background-color: var(--paper);
+  /* 紙の繊維（ごく弱いノイズ）。base64 にしておくと PNG 書き出し（SVG foreignObject 経由）でも壊れない */
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxNjAnIGhlaWdodD0nMTYwJz48ZmlsdGVyIGlkPSduJz48ZmVUdXJidWxlbmNlIHR5cGU9J2ZyYWN0YWxOb2lzZScgYmFzZUZyZXF1ZW5jeT0nMC43NScgbnVtT2N0YXZlcz0nMycgc3RpdGNoVGlsZXM9J3N0aXRjaCcvPjxmZUNvbG9yTWF0cml4IHZhbHVlcz0nMCAwIDAgMCAwLjM1ICAwIDAgMCAwIDAuMjggIDAgMCAwIDAgMC4xOCAgMCAwIDAgMC4xNiAwJy8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9JzEwMCUnIGhlaWdodD0nMTAwJScgZmlsdGVyPSd1cmwoI24pJy8+PC9zdmc+");
+  background-size: 160px;
+  color: var(--ink);
+  padding: 24px 24px 18px;
+  /* 型抜き（四隅とミシン目の切り欠き）は TicketView が mask-image で与える */
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  transform: rotateX(var(--tilt-rx)) rotateY(var(--tilt-ry));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pass-card {
+    /* 指を離すと、ばねで正面へ戻りながら箔の光が引いていく */
+    transition:
+      transform 520ms var(--ease-spring-soft),
+      --foil 420ms var(--ease-entrance),
+      --sheen 420ms var(--ease-entrance);
+  }
+
+  .pass-card.is-tilting {
+    transition: transform 70ms linear, --foil 90ms linear, --sheen 90ms linear;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 視差効果を減らす設定では傾けない（箔の光だけは指の位置で反応する） */
+  .pass-card {
+    transform: none;
+  }
+}
+
+/* PNG 書き出し中は常に「正面・光なし」 */
+.pass-card.is-capturing {
+  transform: none !important;
+  transition: none !important;
+  --foil: 0 !important;
+}
+
+/* 外枠の版：同じ線を「インク」（正面）と「箔」（傾き）の2層で重ねる */
+.pass-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pass-frame.is-ink {
+  /* 線の色はこの color から TicketView が読み取って SVG に焼き込む */
+  color: var(--foil-ink);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.pass-frame.is-foil {
+  background: var(--foil-sheet);
+  opacity: var(--foil);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+.pass-card > :not(.pass-frame) {
+  position: relative;
+  z-index: 1;
+}
+
+/* リボン・星など「面」の箔 */
+.pass-foil-sheet {
+  position: absolute;
+  inset: 0;
+  background: var(--foil-sheet);
+  opacity: var(--foil);
+  pointer-events: none;
+}
+
+/* 題字の箱（線は外枠と同じ版で描く） */
+.pass-title-box {
+  margin-top: 10px;
+  padding: 26px 14px 14px;
+  text-align: center;
+}
+
+/* 箱の上の線にまたがるリボン（日程） */
+.pass-ribbon {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% -50%;
+  padding: 4px 20px 5px;
+  background: var(--foil-ink);
+  color: var(--paper);
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 50%, 100% 100%, 0 100%, 8px 50%);
+  font-family: var(--font-mincho);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.32em;
+  text-indent: 0.32em;
+}
+
+.pass-ribbon-label {
+  position: relative;
+}
+
+.pass-logo {
+  display: block;
+  max-width: 170px;
+  max-height: 64px;
+  width: auto;
+  height: auto;
+  margin: 0 auto 8px;
+}
+
+/* 題字画像（メインビジュアル等）。指定があれば文字の題字と置き換える */
+.pass-title-visual {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* 題字画像があるときも、文字の題字は読み上げ用に残す（見た目だけ隠す） */
+.pass-title-box.has-visual .pass-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 活版：インクが紙に沈んだ縁（下側に紙の反射、上側にわずかな影） */
+.pass-title,
+.pass-date,
+.pass-item-index,
+.pass-item-title,
+.pass-item-time-tag,
+.pass-footer {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7), 0 -0.5px 0 rgba(42, 34, 51, 0.14);
+}
+
+.pass-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  font-feature-settings: 'palt';
+  word-break: auto-phrase;
+  text-wrap: balance;
+  color: var(--foil-ink);
+}
+
+/* 箔：同じ文字を真上に重ね、傾き（--foil）に応じて光る箔面を出す。
+   重ねた文字は読み上げ対象外（content の代替テキストを空にする） */
+.foil {
+  position: relative;
+}
+
+.foil::after {
+  content: attr(data-foil-text);
+  content: attr(data-foil-text) / "";
+  position: absolute;
+  inset: 0;
+  background: var(--foil-sheet);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  opacity: var(--foil);
+  pointer-events: none;
+}
+
+.pass-date-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pass-title-box.has-visual .pass-date-line {
+  margin-top: 10px;
+}
+
+.pass-star {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  background: var(--foil-ink);
+  clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+}
+
+.pass-date {
+  font-family: var(--font-mincho);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  font-feature-settings: 'palt';
+  color: var(--ink);
+}
+
+/* ミシン目（左右の半円の切り欠きは、紙の型抜きマスク側で抜く） */
+.pass-perf {
+  height: 14px;
+  margin: 8px -24px;
+}
+
+.pass-perf::before {
+  content: "";
+  position: absolute;
+  left: 30px;
+  right: 30px;
+  top: 50%;
+  border-top: 1.5px dotted color-mix(in srgb, var(--ink) 32%, transparent);
+}
+
+.pass-items {
+  display: flex;
+  flex-direction: column;
+  padding: 0 2px;
+}
+
+.pass-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 1px;
+  padding: 8px 0;
+  text-align: left;
+  border-bottom: 1px dashed color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.pass-item:last-child {
+  border-bottom: 0;
+}
+
+.pass-item-index {
+  grid-row: 1 / span 3;
+  align-self: center;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--foil-ink);
+}
+
+/* 時間と会場：小さな記入欄の見出し付き。狭いときは会場が次の行へ回る */
+.pass-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  column-gap: 10px;
+}
+
+.pass-field {
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--ink-soft);
+  margin-right: 5px;
+}
+
+.pass-item-time,
+.pass-item-room {
+  white-space: nowrap;
+}
+
+.pass-item-time-tag {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pass-item-room {
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.pass-item-title {
+  font-family: var(--font-mincho);
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  font-feature-settings: 'palt';
+}
+
+.pass-item-group {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+.pass-empty {
+  padding: 18px 12px;
+  text-align: center;
+}
+
+.pass-empty-title {
+  font-family: var(--font-mincho);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.pass-empty-note {
+  margin-top: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* 下部：ハッシュタグと消印 */
+.pass-foot-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 0 6px;
+}
+
+.pass-foot-text {
+  min-width: 0;
+}
+
+.pass-footer {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  font-feature-settings: 'palt';
+  color: var(--foil-ink);
+  overflow-wrap: anywhere;
+}
+
+.pass-count {
+  margin-top: 3px;
+  font-family: var(--font-mincho);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* 消印：インクの版（少し薄く押したスタンプ）。
+   html-to-image はインライン SVG の中身をスタイル抜きで複製するため、書体と色は SVG のルートに指定して子へ継承させる */
+.pass-postmark {
+  flex: none;
+  width: 70px;
+  height: 70px;
+  rotate: -12deg;
+  color: color-mix(in srgb, var(--ink) 72%, transparent);
+  font-family: var(--font-mincho);
+  font-weight: 800;
+}
+
+.pass-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.btn-primary-dark {
+  height: 40px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-ink-soft);
+  color: #ffffff;
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 11.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn-secondary-light {
+  height: 40px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: #ffffff;
+  color: var(--fes-ink);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 11.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn-secondary-light:hover {
+  background: var(--fes-surface-subtle);
+}
+
+.btn-sns-share-wide {
+  grid-column: 1 / -1;
+  height: 42px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: var(--fes-accent-soft);
+  color: var(--fes-ink);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 12.5px;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ios-share-guide {
+  margin-top: 8px;
+  padding: 10px;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: var(--radius-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ios-share-guide img {
+  max-height: 150px;
+  margin: 0 auto;
+  border-radius: var(--radius-xs);
+  border: 1px solid #cbd5e1;
+  object-fit: contain;
+}
+
+.ios-share-x-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: var(--radius-xs);
+  background: #000000;
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   「絞り込み・便利機能」 ＆ 「使い方」モーダル
+   ========================================================================== */
+.filter-box {
+  background: var(--fes-bg);
+  border: 1px solid var(--fes-border);
+  border-radius: var(--radius-sm);
+  padding: 11px;
+}
+
+.filter-box-label {
+  font-size: 11.5px;
+  font-weight: 900;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.chip-btn {
+  padding: 5px 9px;
+  border-radius: var(--radius-xs);
+  border: 1.5px solid var(--fes-border-strong);
+  background: #ffffff;
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.chip-btn.active {
+  background: var(--fes-main);
+  color: #ffffff;
+  border-color: var(--fes-border-strong);
+  box-shadow: 0 2px 0 var(--fes-border-strong);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .howto-btn:active:not(:disabled),
+  .tools-btn:active:not(:disabled),
+  .reserve-link-btn:active:not(.is-onsite):not(.is-locked),
+  .selection-reset-btn:active:not(:disabled),
+  .selection-open-btn:active:not(:disabled),
+  .back-pill-btn:active:not(:disabled),
+  .close-square-btn:active:not(:disabled),
+  .tl-remove-btn:active:not(:disabled),
+  .tl-reserve-btn:active,
+  .gap-add-btn:active:not(:disabled),
+  .btn-gap-search:active:not(:disabled),
+  .btn-go-pass:active:not(:disabled),
+  .btn-primary-dark:active:not(:disabled),
+  .btn-secondary-light:active:not(:disabled),
+  .btn-sns-share-wide:active:not(:disabled),
+  .chip-btn:active:not(:disabled) {
+    transform: translateY(1.5px);
+    box-shadow: 0 0.5px 0 var(--fes-border-strong);
+  }
+}
+
+.tags-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+details.exclude-accordion {
+  margin-top: 2px;
+  border-top: 1px solid var(--fes-border);
+  padding-top: 9px;
+}
+
+details.exclude-accordion > summary {
+  list-style: none;
+  font-size: 10.45px; /* 11px × 0.95（参加済みの欄はひと回り小さく） */
+  font-weight: 800;
+  color: var(--fes-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+details.exclude-accordion > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.exclude-accordion > summary::before {
+  content: "+";
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--fes-muted);
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--fes-muted);
+}
+
+details.exclude-accordion[open] > summary::before {
+  content: "-";
+  background: var(--fes-ink);
+  border-color: var(--fes-ink);
+  color: #ffffff;
+}
+
+.exclude-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.exclude-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--fes-bg);
+  border: 1px solid var(--fes-border);
+  border-radius: var(--radius-xs);
+  font-size: 10.45px; /* 11px × 0.95 */
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filter-footer-row {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.howto-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.howto-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px;
+  background: var(--fes-bg);
+  border: 1px solid var(--fes-border);
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.howto-num {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--fes-main);
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.howto-note {
+  font-size: 11px;
+  color: var(--fes-muted);
+  font-weight: 700;
+  border-top: 1px solid var(--fes-border);
+  padding-top: 8px;
+  margin: 0;
+}

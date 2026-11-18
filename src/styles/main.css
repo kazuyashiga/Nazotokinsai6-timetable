@@ -1,0 +1,174 @@
+@import './tokens.css';
+@import './timetable.css';
+@import './components.css';
+@import './route.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   ベーススタイル・スクロール・インタラクション・View Transitions
+   ========================================================================== */
+html {
+  container-type: scroll-state;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--fes-bg);
+  color: var(--fes-ink);
+  font-family: var(--font-sans);
+  line-height: 1.35;
+  font-feature-settings: "palt";
+}
+
+button,
+a {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:where(button, a, input, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--fes-main);
+  outline-offset: 2px;
+}
+
+/* コンポジタ駆動の小気味よいクリック・ホバー応答 */
+button {
+  transition:
+    transform var(--duration-fast) var(--ease-entrance),
+    opacity var(--duration-fast) var(--ease-entrance),
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button:active:not(:disabled) {
+    transform: scale(0.975);
+  }
+}
+
+/* ==========================================================================
+   Directional View Transitions（DAY 切替）
+   遷移名は runDirectionalTransition 実行中（html[data-vt="directional"]）だけ付ける。
+   常時付けると、モーダル・ポップオーバー（top layer）の切替時に表がそれより手前へ描かれてしまう。
+   予定一覧 ⇔ My ハシゴテーブルの切替は motion.js の morphDialogPanel（View Transition 不使用）
+   ========================================================================== */
+:root[data-vt="directional"] #timetable-section {
+  view-transition-name: timetable-stage;
+}
+
+@keyframes vt-slide-out-left {
+  to {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+}
+
+@keyframes vt-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+}
+
+@keyframes vt-slide-out-right {
+  to {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+}
+
+@keyframes vt-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+}
+
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:active-view-transition-type(forward)::view-transition-old(timetable-stage) {
+    animation: vt-slide-out-left var(--duration-exit) var(--ease-exit) both;
+  }
+
+  html:active-view-transition-type(forward)::view-transition-new(timetable-stage) {
+    animation: vt-slide-in-right var(--duration-medium) var(--ease-entrance) both;
+  }
+
+  html:active-view-transition-type(backward)::view-transition-old(timetable-stage) {
+    animation: vt-slide-out-right var(--duration-exit) var(--ease-exit) both;
+  }
+
+  html:active-view-transition-type(backward)::view-transition-new(timetable-stage) {
+    animation: vt-slide-in-left var(--duration-medium) var(--ease-entrance) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(timetable-stage) {
+    animation: vt-fade-out 100ms ease both;
+  }
+
+  ::view-transition-new(timetable-stage) {
+    animation: vt-fade-in 120ms ease both;
+  }
+}
+
+/* 標準スクロールバー制御 + WebKit フォールバック */
+.custom-scroll {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+@supports not (scrollbar-color: auto) {
+  .custom-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 2px;
+  }
+
+  .custom-scroll::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@supports not (scrollbar-width: none) {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.hidden {
+  display: none !important;
+}

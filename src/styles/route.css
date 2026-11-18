@@ -1,0 +1,685 @@
+/* ==========================================================================
+   会場内ルート（RouteView）
+   スマホ全画面を基本に、PC では中央の縦長カラム。色はテーマのメイン／アクセントから取る
+   ========================================================================== */
+.route-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fes-ink);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  /* ルートの線は地図アプリで見慣れた青（Google マップのルート線に近い色。公式の指定値ではなく近似）。
+     テーマ色（紫など）は UI 側に使い、線だけは「移動ルート」と一目で分かる色にする */
+  --route-core: #1a73e8;
+  --route-edge: #185abc;
+}
+.route-dialog::backdrop {
+  background: rgba(10, 12, 20, 0.55);
+}
+.route-dialog[open] .rv-shell {
+  animation: rv-shell-in 420ms var(--ease-spring-soft, cubic-bezier(0.24, 1, 0.4, 1)) both;
+}
+@keyframes rv-shell-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.rv-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--fes-surface);
+}
+@media (min-width: 640px) {
+  .rv-shell {
+    width: min(520px, 100%);
+    height: min(100dvh - 32px, 920px);
+    margin: 16px auto;
+    border: 1.5px solid var(--fes-border-strong);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-modal);
+  }
+}
+
+/* ---------- ヘッダー ---------- */
+.rv-head {
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  border-bottom: 1.5px solid var(--fes-border);
+  background: var(--fes-surface);
+  position: relative;
+  z-index: 6;
+}
+.rv-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rv-kicker {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--fes-main);
+}
+.rv-legline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  min-width: 0;
+}
+.rv-room {
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rv-room-to {
+  color: var(--fes-main);
+}
+/* 出発 → 到着の間：3 つの山形が順に灯って向きを示す */
+.rv-legarrow {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+}
+.rv-legarrow i {
+  width: 9px;
+  height: 9px;
+  border-top: 3px solid var(--fes-main);
+  border-right: 3px solid var(--fes-main);
+  transform: rotate(45deg);
+  opacity: 0.25;
+  animation: rv-legarrow 1.2s infinite;
+}
+.rv-legarrow i:nth-child(2) { animation-delay: 0.15s; }
+.rv-legarrow i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes rv-legarrow {
+  0%, 60%, 100% { opacity: 0.25; }
+  25% { opacity: 1; }
+}
+.rv-next-show {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fes-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 通る階のレール */
+.rv-rail {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+.rv-rail[hidden] { display: none; }
+.rv-rail-floor {
+  flex: none;
+  padding: 4px 12px;
+  border: 1.5px solid var(--fes-border-strong);
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 900;
+  background: var(--fes-surface);
+  color: var(--fes-muted);
+  transition: background-color 260ms, color 260ms, transform 360ms var(--ease-spring-pop, ease-out);
+}
+.rv-rail-floor.is-done {
+  background: var(--fes-main-tint-strong);
+  color: var(--fes-main);
+}
+.rv-rail-floor.is-active {
+  background: var(--fes-main);
+  color: var(--fes-main-ink);
+  border-color: var(--fes-main);
+  transform: scale(1.06);
+}
+.rv-rail-link {
+  flex: 1;
+  height: 3px;
+  margin: 0 6px;
+  background: var(--fes-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rv-rail-link span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--fes-main);
+  transition: width 700ms var(--ease-entrance, ease-out);
+}
+.rv-rail-link.is-done span { width: 100%; }
+
+/* ---------- ステージ（地図） ---------- */
+.rv-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #e7e9f0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.rv-map {
+  position: absolute;
+  inset: 0;
+  will-change: transform, opacity;
+}
+.rv-map-svg,
+.rv-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.rv-overlay {
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+.rv-pins {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* ルートの線 */
+.rv-route-halo,
+.rv-route-base,
+.rv-route-flow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* 縁取り（濃い青）→ 本線（青）の 2 重線 */
+.rv-route-halo {
+  stroke: var(--route-edge);
+  stroke-width: 13;
+}
+.rv-route-base {
+  stroke: var(--route-core);
+  stroke-width: 8;
+}
+/* 光の帯：線の上を、出発地 → 到着地の向きに流れ続ける */
+.rv-route-flow {
+  stroke: #fff;
+  stroke-width: 3.5;
+  opacity: 0.9;
+  stroke-dasharray: 3 21;
+  animation: rv-flow 0.75s linear infinite;
+  transition: opacity 300ms;
+}
+@keyframes rv-flow {
+  to { stroke-dashoffset: -24; }
+}
+.rv-chevron {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rv-walker-glow {
+  fill: var(--route-core);
+  opacity: 0.28;
+}
+.rv-walker-core {
+  fill: #fff;
+  stroke: var(--route-edge);
+  stroke-width: 3.5;
+}
+.rv-comet-glow {
+  fill: var(--route-core);
+  opacity: 0.32;
+}
+.rv-comet-core {
+  fill: #fff;
+  stroke: var(--route-core);
+  stroke-width: 4;
+}
+
+/* ---------- 札（画面座標の HTML） ---------- */
+.rv-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  will-change: transform, opacity;
+}
+.rv-pin-label {
+  position: absolute;
+  left: 20px;
+  top: -15px;
+  padding: 5px 10px;
+  border: 1.5px solid var(--fes-border-strong);
+  border-radius: var(--radius-xs);
+  background: var(--fes-surface);
+  color: var(--fes-ink);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
+}
+.rv-pin.label-left .rv-pin-label {
+  left: auto;
+  right: 20px;
+}
+.rv-pin.label-up .rv-pin-label {
+  top: -54px;
+}
+
+/* 出発：アクセント色の点と、広がる波紋 */
+.rv-start-dot {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fes-accent);
+  border: 3px solid var(--fes-ink);
+}
+.rv-start-sonar {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2.5px solid var(--fes-accent);
+  animation: rv-sonar 1.8s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+@keyframes rv-sonar {
+  from { transform: scale(1); opacity: 0.95; }
+  to { transform: scale(3.2); opacity: 0; }
+}
+
+/* 到着：メイン色のピン（上から落ちてくる。動きは JS） */
+.rv-end-pin {
+  position: absolute;
+  left: -18px;
+  top: -48px;
+  width: 36px;
+  height: 47px;
+  overflow: visible;
+}
+.rv-end-pin path {
+  fill: var(--fes-main);
+  stroke: #fff;
+  stroke-width: 3;
+}
+.rv-end-pin circle {
+  fill: #fff;
+}
+.rv-end-shadow {
+  position: absolute;
+  left: -12px;
+  top: -4px;
+  width: 24px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(17, 19, 26, 0.28);
+}
+.rv-pin-end .rv-pin-label {
+  top: -44px;
+  left: 22px;
+  border-color: var(--fes-main);
+  color: var(--fes-main);
+}
+.rv-pin-end.label-left .rv-pin-label {
+  left: auto;
+  right: 22px;
+}
+
+/* 階段：番号札（出る階と着く階で同じ番号・同じ色） */
+.rv-stair-badge {
+  position: absolute;
+  left: -27px;
+  top: -18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 8px 0 9px;
+  border-radius: var(--radius-sm);
+  background: var(--fes-ink);
+  color: #fff;
+  border: 2px solid var(--fes-accent);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.22);
+}
+.rv-stair-badge b {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  line-height: 1;
+  color: var(--fes-accent);
+}
+.rv-stair-ring {
+  position: absolute;
+  left: -30px;
+  top: -30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid var(--fes-accent);
+  opacity: 0;
+}
+.rv-pin.is-pulse .rv-stair-ring {
+  animation: rv-stair-ring 1.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+@keyframes rv-stair-ring {
+  from { transform: scale(0.6); opacity: 0.9; }
+  to { transform: scale(1.7); opacity: 0; }
+}
+.rv-pin-stair .rv-pin-label {
+  left: 34px;
+  top: -16px;
+  background: var(--fes-ink);
+  color: #fff;
+  border-color: var(--fes-ink);
+}
+.rv-pin-stair.label-left .rv-pin-label {
+  left: auto;
+  right: 34px;
+}
+
+/* ---------- 共通のボタン（キーキャップ） ---------- */
+.rv-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border: 1.5px solid var(--fes-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--fes-surface);
+  color: var(--fes-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 var(--fes-border-strong);
+  cursor: pointer;
+}
+.rv-icon-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--fes-border-strong);
+}
+.rv-fit {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 5;
+}
+
+/* ---------- 下部：案内文とナビ ---------- */
+.rv-foot {
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1.5px solid var(--fes-border);
+  background: var(--fes-surface);
+  position: relative;
+  z-index: 6;
+}
+.rv-instruction {
+  min-height: 64px;
+}
+.rv-ins-sub {
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fes-muted);
+}
+.rv-ins-mini {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-xs);
+  background: var(--fes-ink);
+  border: 1.5px solid var(--fes-accent);
+}
+.rv-ins-mini b {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--fes-accent);
+}
+.rv-ins-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rv-ins-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--fes-ink);
+  color: #fff;
+  border: 2px solid var(--fes-accent);
+}
+.rv-ins-badge b {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--fes-accent);
+}
+.rv-ins-goal {
+  flex: none;
+  width: 30px;
+  height: 38px;
+  background: var(--fes-main);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 52'%3E%3Cpath d='M20 51s17-17.6 17-30.5A17 17 0 0 0 3 20.5C3 33.4 20 51 20 51z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 52'%3E%3Cpath d='M20 51s17-17.6 17-30.5A17 17 0 0 0 3 20.5C3 33.4 20 51 20 51z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.rv-ins-text {
+  font-size: 19px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+.rv-ins-text strong {
+  font-weight: 900;
+  font-size: 22px;
+  margin: 0 2px;
+}
+.rv-ins-text small {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--fes-muted);
+}
+
+.rv-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+.rv-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 48px;
+  min-width: 96px;
+  padding: 0 16px;
+  border: 1.5px solid var(--fes-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--fes-surface);
+  color: var(--fes-ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 var(--fes-border-strong);
+  cursor: pointer;
+}
+.rv-nav-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--fes-border-strong);
+}
+.rv-nav-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+.rv-nav-btn.is-primary {
+  background: var(--fes-main);
+  color: var(--fes-main-ink);
+  border-color: var(--fes-ink);
+  box-shadow: 0 3px 0 var(--fes-ink);
+}
+.rv-nav-btn.is-close {
+  background: var(--fes-accent-soft);
+  color: var(--fes-accent-ink);
+}
+.rv-icon-btn:focus-visible,
+.rv-nav-btn:focus-visible {
+  outline: 3px solid var(--fes-accent);
+  outline-offset: 2px;
+}
+.rv-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.rv-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fes-border);
+  transition: background-color 260ms, transform 360ms var(--ease-spring-pop, ease-out);
+}
+.rv-dots i.is-done { background: var(--fes-main-tint); }
+.rv-dots i.is-active {
+  background: var(--fes-main);
+  transform: scale(1.35);
+}
+
+/* ---------- 予定一覧の「移動」の帯 ---------- */
+.move-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 2px 14px;
+  padding: 8px 10px 8px 12px;
+  border-left: 3px dashed var(--fes-main);
+  background: var(--fes-main-tint-strong);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  animation: stagger-item-enter 0.45s var(--ease-entrance, ease-out) both;
+}
+.move-strip-icon {
+  flex: none;
+  color: var(--fes-main);
+}
+.move-strip-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--fes-ink);
+}
+.move-strip-text b {
+  font-weight: 900;
+}
+.move-strip-text .move-floor {
+  display: inline-block;
+  margin-right: 3px;
+  padding: 0 5px;
+  border-radius: var(--radius-xs);
+  background: var(--fes-ink);
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+}
+.move-strip-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1.5px solid var(--fes-ink);
+  border-radius: var(--radius-sm);
+  background: var(--fes-main);
+  color: var(--fes-main-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 var(--fes-ink);
+  cursor: pointer;
+}
+.move-strip-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--fes-ink);
+}
+.move-strip-btn:focus-visible {
+  outline: 3px solid var(--fes-accent);
+  outline-offset: 2px;
+}
+
+/* My ハシゴテーブルの「会場での回り方を見る」 */
+.btn-route-tour {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 1.5px solid var(--fes-ink);
+  border-radius: var(--radius-sm);
+  background: var(--fes-surface);
+  color: var(--fes-main);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 3px 0 var(--fes-ink);
+  cursor: pointer;
+}
+.btn-route-tour:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--fes-ink);
+}
+.btn-route-tour.hidden { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .route-dialog[open] .rv-shell,
+  .rv-legarrow i,
+  .rv-route-flow,
+  .rv-start-sonar,
+  .rv-pin.is-pulse .rv-stair-ring,
+  .move-strip {
+    animation: none;
+  }
+  .rv-legarrow i { opacity: 0.8; }
+  .rv-rail-link span { transition: none; }
+}

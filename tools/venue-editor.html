@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>会場マップ編集（代行者用）</title>
+  <link rel="stylesheet" href="/src/styles/main.css">
+  <style>
+    /* 代行者用の作業画面（公開サイトには含まれない）。PC での作業を想定 */
+    body { margin: 0; background: var(--fes-bg); color: var(--fes-ink); font-family: var(--font-sans); }
+    .ve { display: grid; grid-template-columns: 340px 1fr; height: 100vh; }
+    .ve-side { overflow: auto; padding: 16px; border-right: 1.5px solid var(--fes-border); background: var(--fes-surface); }
+    .ve-side h1 { margin: 0 0 4px; font-size: 18px; font-weight: 900; }
+    .ve-side h2 { margin: 18px 0 8px; font-size: 13px; font-weight: 900; color: var(--fes-main); letter-spacing: .04em; }
+    .ve-note { margin: 0; font-size: 12px; color: var(--fes-muted); line-height: 1.6; }
+    .ve-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+    .ve-row label { font-size: 12px; font-weight: 800; }
+    .ve input[type=text], .ve select { height: 32px; padding: 0 8px; border: 1.5px solid var(--fes-border-strong); border-radius: 3px; font: inherit; font-size: 13px; min-width: 0; }
+    .ve button { height: 32px; padding: 0 10px; border: 1.5px solid var(--fes-border-strong); border-radius: 3px; background: var(--fes-surface); font: inherit; font-size: 12px; font-weight: 900; cursor: pointer; box-shadow: 0 2px 0 var(--fes-border-strong); }
+    .ve button.is-on { background: var(--fes-main); color: #fff; border-color: var(--fes-ink); box-shadow: 0 2px 0 var(--fes-ink); }
+    .ve button.primary { background: var(--fes-accent); }
+    .ve-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .ve-floors button { min-width: 52px; }
+    .ve-rooms { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+    .ve-rooms li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--fes-border); }
+    .ve-rooms .ok { color: #15803d; font-weight: 900; }
+    .ve-rooms .ng { color: var(--fes-danger); font-weight: 900; }
+    .ve-main { position: relative; overflow: auto; background: #d6d9e2; }
+    .ve-canvas { position: relative; transform-origin: 0 0; margin: 24px; }
+    .ve-canvas img { display: block; user-select: none; -webkit-user-drag: none; }
+    .ve-canvas svg { position: absolute; inset: 0; overflow: visible; cursor: crosshair; }
+    .ve-hint { position: sticky; top: 0; z-index: 2; padding: 8px 14px; background: var(--fes-ink); color: #fff; font-size: 13px; font-weight: 800; }
+    .ve-empty { padding: 60px; font-size: 15px; color: var(--fes-muted); }
+    .n-path { fill: #fff; stroke: var(--fes-ink); stroke-width: 3; }
+    .n-room { fill: var(--fes-main); stroke: #fff; stroke-width: 3; }
+    .n-stairs { fill: var(--fes-ink); stroke: var(--fes-accent); stroke-width: 3; }
+    .n-sel { stroke: var(--fes-danger); stroke-width: 5; }
+    .e { stroke: var(--fes-main); stroke-width: 5; stroke-linecap: round; opacity: .75; }
+    .e:hover { stroke: var(--fes-danger); }
+    .n-label { font-size: 15px; font-weight: 900; paint-order: stroke; stroke: #fff; stroke-width: 4px; fill: var(--fes-ink); }
+    textarea.ve-json { width: 100%; height: 120px; font-family: var(--font-mono); font-size: 11px; }
+  </style>
+</head>
+<body>
+<div class="ve">
+  <aside class="ve-side">
+    <h1>会場マップ編集</h1>
+    <p class="ve-note">代行者用の作業画面です（公開サイトには出ません）。書き出した <code>venue_map.json</code> を <code>public/</code> に置き、設定シートの「会場マップURL」に <code>./venue_map.json</code> と書くと、予定一覧にルートが出ます。</p>
+
+    <h2>1. 読み込み</h2>
+    <div class="ve-row">
+      <button type="button" id="load-sample">サンプル会館を開く</button>
+      <label>既存の JSON <input type="file" id="load-json" accept="application/json"></label>
+    </div>
+    <div class="ve-row">
+      <label>部屋名の取得元</label>
+      <select id="rooms-src"><option value="/data.json">data.json（本番）</option><option value="/mock_data.json">mock_data.json（デモ）</option></select>
+    </div>
+
+    <h2>2. 階</h2>
+    <div class="ve-row ve-floors" id="floors"></div>
+    <div class="ve-row">
+      <input type="text" id="floor-id" placeholder="ID（例 3F）" size="6">
+      <input type="text" id="floor-label" placeholder="表示名（例 3階）" size="8">
+      <button type="button" id="floor-add">階を追加</button>
+    </div>
+    <div class="ve-row">
+      <label>この階の画像 <input type="file" id="floor-img" accept="image/*"></label>
+    </div>
+    <div class="ve-row">
+      <label>公開時のパス</label>
+      <input type="text" id="floor-path" placeholder="./venue/3f.png" size="18">
+    </div>
+
+    <h2>3. 置く・つなぐ</h2>
+    <div class="ve-modes" id="modes">
+      <button type="button" data-mode="room">部屋の入口</button>
+      <button type="button" data-mode="path">通路の点</button>
+      <button type="button" data-mode="stairs">階段・EV</button>
+      <button type="button" data-mode="link">点をつなぐ</button>
+      <button type="button" data-mode="move">動かす</button>
+      <button type="button" data-mode="delete">消す</button>
+    </div>
+    <div class="ve-row">
+      <label>部屋</label><select id="room-pick"></select>
+    </div>
+    <div class="ve-row">
+      <label>階段・EV の名前</label><input type="text" id="stair-name" value="東階段" size="10">
+      <select id="stair-kind"><option value="stairs">階段</option><option value="elevator">エレベーター</option></select>
+    </div>
+    <p class="ve-note">同じ名前の階段・EV は、上下の階どうしで自動的につながります。</p>
+
+    <h2>4. 部屋の配置状況</h2>
+    <ul class="ve-rooms" id="room-status"></ul>
+
+    <h2>5. 試す</h2>
+    <div class="ve-row">
+      <select id="try-from"></select><span>→</span><select id="try-to"></select>
+      <button type="button" class="primary" id="try-go">ルートを再生</button>
+    </div>
+
+    <h2>6. 書き出し</h2>
+    <div class="ve-row">
+      <button type="button" class="primary" id="export">venue_map.json を保存</button>
+      <button type="button" id="copy">コピー</button>
+    </div>
+    <textarea class="ve-json" id="json-out" readonly></textarea>
+  </aside>
+  <main class="ve-main" id="main">
+    <div class="ve-hint" id="hint">「サンプル会館を開く」か、階を追加して画像を読み込んでください。</div>
+    <div class="ve-canvas" id="canvas"></div>
+  </main>
+</div>
+
+<script type="module">
+import { VenueRouter, normalizeRoomName } from '/src/core/VenueRouter.js';
+import { RouteView } from '/src/ui/RouteView.js';
+
+const $ = (id) => document.getElementById(id);
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const HINTS = {
+  room: '部屋の入口をクリックすると、左で選んだ部屋として置きます（ピンは入口のすぐ内側が見やすい）。',
+  path: '廊下の曲がり角・分かれ道をクリックして点を置きます。',
+  stairs: '階段・エレベーターの位置をクリック。同じ名前なら上下の階が自動でつながります。',
+  link: '点を 2 つ順にクリックすると、通路としてつながります。',
+  move: '点をドラッグして動かします。',
+  delete: '点か通路をクリックすると消します。',
+};
+
+const st = { map: { floors: [], nodes: [], edges: [] }, floorId: null, mode: 'room', sel: null, rooms: [], localImg: {}, seq: 1 };
+const routeView = new RouteView();
+
+/* ---------- 読み込み ---------- */
+async function loadRooms() {
+  try {
+    const res = await fetch($('rooms-src').value, { cache: 'no-cache' });
+    const data = await res.json();
+    st.rooms = [...new Set((data.shows || []).map((s) => s['会場(部屋)'] || s['場所(階)']).filter((r) => r && r !== '-' && r !== '未定'))];
+  } catch { st.rooms = []; }
+  renderSide();
+}
+function setMap(map, baseUrl) {
+  st.map = { floors: map.floors || [], nodes: map.nodes || [], edges: (map.edges || []).filter((e) => !Array.isArray(e) ? !e.auto : true) };
+  st.map.floors.forEach((f) => { if (baseUrl && f.image && !st.localImg[f.id]) st.localImg[f.id] = new URL(f.image, baseUrl).href; });
+  st.floorId = st.map.floors[0]?.id || null;
+  st.seq = st.map.nodes.length + 1;
+  render();
+}
+$('load-sample').onclick = async () => {
+  const url = new URL('/venue_map.json', location.href).href;
+  setMap(await (await fetch(url, { cache: 'no-cache' })).json(), url);
+  $('rooms-src').value = '/mock_data.json';
+  loadRooms();
+};
+$('load-json').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  setMap(JSON.parse(await f.text()), new URL('/', location.href).href);
+};
+$('rooms-src').onchange = loadRooms;
+
+/* ---------- 階 ---------- */
+$('floor-add').onclick = () => {
+  const id = $('floor-id').value.trim();
+  if (!id || st.map.floors.some((f) => f.id === id)) return alert('階の ID を入れてください（重複不可）');
+  st.map.floors.push({ id, label: $('floor-label').value.trim() || id, image: `./venue/${id.toLowerCase()}.png`, width: 1200, height: 800 });
+  st.floorId = id;
+  render();
+};
+$('floor-img').onchange = (e) => {
+  const f = e.target.files[0];
+  const floor = curFloor();
+  if (!f || !floor) return;
+  const url = URL.createObjectURL(f);
+  const img = new Image();
+  img.onload = () => {
+    floor.width = img.naturalWidth;
+    floor.height = img.naturalHeight;
+    st.localImg[floor.id] = url;
+    if (!$('floor-path').value) floor.image = `./venue/${f.name}`;
+    render();
+  };
+  img.src = url;
+};
+$('floor-path').onchange = () => { const f = curFloor(); if (f) { f.image = $('floor-path').value.trim(); renderJson(); } };
+const curFloor = () => st.map.floors.find((f) => f.id === st.floorId);
+
+/* ---------- モード ---------- */
+$('modes').onclick = (e) => {
+  const b = e.target.closest('button[data-mode]');
+  if (!b) return;
+  st.mode = b.dataset.mode;
+  st.sel = null;
+  render();
+};
+
+/* ---------- キャンバス操作 ---------- */
+function svgPoint(evt, svg) {
+  const r = svg.getBoundingClientRect();
+  const f = curFloor();
+  return { x: Math.round(((evt.clientX - r.left) / r.width) * f.width), y: Math.round(((evt.clientY - r.top) / r.height) * f.height) };
+}
+function addNode(p) {
+  const f = curFloor();
+  const n = { id: `${f.id}-${st.mode}-${st.seq++}`, floor: f.id, x: p.x, y: p.y };
+  if (st.mode === 'room') {
+    const room = $('room-pick').value;
+    if (!room) return alert('左の「部屋」で部屋名を選んでください');
+    n.room = room;
+  }
+  if (st.mode === 'stairs') {
+    n.kind = $('stair-kind').value;
+    n.name = $('stair-name').value.trim() || (n.kind === 'elevator' ? 'エレベーター' : '階段');
+  }
+  st.map.nodes.push(n);
+  // 直前に選んでいた点とつなぐ（廊下を続けて置きやすくする）
+  if (st.sel && st.sel !== n.id && st.mode !== 'stairs') st.map.edges.push([st.sel, n.id]);
+  st.sel = n.id;
+}
+function edgeKey(e) { const [a, b] = Array.isArray(e) ? e : [e.a, e.b]; return [a, b].sort().join('|'); }
+
+/* ---------- 書き出し（同名の階段・EV を上下の階でつなぐ） ---------- */
+function exportMap() {
+  const edges = st.map.edges.filter((e) => Array.isArray(e) || !e.auto);
+  const seen = new Set(edges.map(edgeKey));
+  const order = st.map.floors.map((f) => f.id);
+  const byName = {};
+  st.map.nodes.filter((n) => n.kind === 'stairs' || n.kind === 'elevator').forEach((n) => (byName[`${n.kind}:${n.name}`] ||= []).push(n));
+  for (const list of Object.values(byName)) {
+    list.sort((a, b) => order.indexOf(a.floor) - order.indexOf(b.floor));
+    for (let i = 1; i < list.length; i++) {
+      const e = { a: list[i - 1].id, b: list[i].id, weight: list[i].kind === 'elevator' ? 300 : 400 };
+      if (!seen.has(edgeKey(e))) { edges.push(e); seen.add(edgeKey(e)); }
+    }
+  }
+  return { ...st.map, edges };
+}
+function renderJson() { $('json-out').value = JSON.stringify(exportMap(), null, 2); }
+$('export').onclick = () => {
+  const blob = new Blob([JSON.stringify(exportMap(), null, 2) + '\n'], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'venue_map.json';
+  a.click();
+};
+$('copy').onclick = () => navigator.clipboard.writeText($('json-out').value);
+
+/* ---------- 試す（本物のルート表示で再生） ---------- */
+$('try-go').onclick = () => {
+  const map = exportMap();
+  // 編集中の画像（ローカルのファイル）で見られるよう、画像の参照を差し替える
+  map.floors = map.floors.map((f) => ({ ...f, image: st.localImg[f.id] || f.image }));
+  try {
+    const router = new VenueRouter(map);
+    const ok = routeView.open(router, [{ from: $('try-from').value, to: $('try-to').value }]);
+    if (!ok) alert('ルートが見つかりません。通路がつながっているか確認してください');
+  } catch (err) { alert(err.message); }
+};
+
+/* ---------- 描画 ---------- */
+function renderSide() {
+  $('floors').innerHTML = st.map.floors.map((f) => `<button type="button" data-floor="${f.id}" class="${f.id === st.floorId ? 'is-on' : ''}">${f.label}</button>`).join('');
+  [...$('floors').querySelectorAll('button')].forEach((b) => (b.onclick = () => { st.floorId = b.dataset.floor; st.sel = null; render(); }));
+  [...$('modes').querySelectorAll('button')].forEach((b) => b.classList.toggle('is-on', b.dataset.mode === st.mode));
+  const placed = new Set(st.map.nodes.flatMap((n) => [n.room, ...(n.aliases || [])]).filter(Boolean).map(normalizeRoomName));
+  $('room-pick').innerHTML = st.rooms.map((r) => `<option>${r}</option>`).join('');
+  $('room-status').innerHTML = st.rooms.map((r) => `<li><span>${r}</span>${placed.has(normalizeRoomName(r)) ? '<span class="ok">配置済み</span>' : '<span class="ng">未配置</span>'}</li>`).join('') || '<li>部屋名を取得できませんでした</li>';
+  const roomOpts = st.map.nodes.filter((n) => n.room).map((n) => `<option>${n.room}</option>`).join('');
+  const keepFrom = $('try-from').value; const keepTo = $('try-to').value;
+  $('try-from').innerHTML = roomOpts; $('try-to').innerHTML = roomOpts;
+  if (keepFrom) $('try-from').value = keepFrom;
+  if (keepTo) $('try-to').value = keepTo; else if ($('try-to').options.length > 1) $('try-to').selectedIndex = 1;
+  const f = curFloor();
+  $('floor-path').value = f ? f.image || '' : '';
+  $('hint').textContent = f ? `${f.label}：${HINTS[st.mode]}` : '「サンプル会館を開く」か、階を追加して画像を読み込んでください。';
+}
+
+function render() {
+  renderSide();
+  renderJson();
+  const f = curFloor();
+  const canvas = $('canvas');
+  if (!f) { canvas.innerHTML = '<p class="ve-empty">階がありません</p>'; return; }
+  canvas.innerHTML = '';
+  canvas.style.width = `${f.width}px`;
+  canvas.style.height = `${f.height}px`;
+  const img = document.createElement('img');
+  img.src = st.localImg[f.id] || f.image;
+  img.width = f.width; img.height = f.height;
+  canvas.appendChild(img);
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${f.width} ${f.height}`);
+  svg.setAttribute('width', f.width); svg.setAttribute('height', f.height);
+  const nodes = st.map.nodes.filter((n) => n.floor === f.id);
+  const byId = new Map(st.map.nodes.map((n) => [n.id, n]));
+  st.map.edges.forEach((e, i) => {
+    const [a, b] = Array.isArray(e) ? e : [e.a, e.b];
+    const na = byId.get(a); const nb = byId.get(b);
+    if (!na || !nb || na.floor !== f.id || nb.floor !== f.id) return;
+    const line = document.createElementNS(SVG_NS, 'line');
+    Object.entries({ x1: na.x, y1: na.y, x2: nb.x, y2: nb.y, class: 'e' }).forEach(([k, v]) => line.setAttribute(k, v));
+    line.dataset.edge = i;
+    line.dataset.a = a;
+    line.dataset.b = b;
+    svg.appendChild(line);
+  });
+  nodes.forEach((n) => {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.dataset.node = n.id;
+    const kind = n.room ? 'room' : (n.kind === 'stairs' || n.kind === 'elevator') ? 'stairs' : 'path';
+    const shape = document.createElementNS(SVG_NS, kind === 'stairs' ? 'rect' : 'circle');
+    if (kind === 'stairs') Object.entries({ x: n.x - 12, y: n.y - 12, width: 24, height: 24, rx: 4 }).forEach(([k, v]) => shape.setAttribute(k, v));
+    else Object.entries({ cx: n.x, cy: n.y, r: kind === 'room' ? 13 : 8 }).forEach(([k, v]) => shape.setAttribute(k, v));
+    shape.setAttribute('class', `n-${kind}${st.sel === n.id ? ' n-sel' : ''}`);
+    g.appendChild(shape);
+    const label = n.room || n.name;
+    if (label) {
+      const t = document.createElementNS(SVG_NS, 'text');
+      Object.entries({ x: n.x + 18, y: n.y + 5, class: 'n-label' }).forEach(([k, v]) => t.setAttribute(k, v));
+      t.textContent = label;
+      g.appendChild(t);
+    }
+    svg.appendChild(g);
+  });
+  canvas.appendChild(svg);
+
+  let drag = null;
+  svg.onpointerdown = (e) => {
+    const g = e.target.closest('[data-node]');
+    const line = e.target.closest('[data-edge]');
+    if (st.mode === 'delete') {
+      if (g) {
+        const id = g.dataset.node;
+        st.map.nodes = st.map.nodes.filter((n) => n.id !== id);
+        st.map.edges = st.map.edges.filter((ed) => !(Array.isArray(ed) ? ed : [ed.a, ed.b]).includes(id));
+      } else if (line) st.map.edges.splice(Number(line.dataset.edge), 1);
+      return render();
+    }
+    if (st.mode === 'move' && g) { drag = byId.get(g.dataset.node); svg.setPointerCapture(e.pointerId); return; }
+    if (st.mode === 'link' && g) {
+      const id = g.dataset.node;
+      if (st.sel && st.sel !== id) {
+        const ed = [st.sel, id];
+        if (!st.map.edges.some((x) => edgeKey(x) === edgeKey(ed))) st.map.edges.push(ed);
+        st.sel = id;
+      } else st.sel = id;
+      return render();
+    }
+    if (g) { st.sel = g.dataset.node; return render(); }
+    if (['room', 'path', 'stairs'].includes(st.mode)) { addNode(svgPoint(e, svg)); render(); }
+  };
+  // ドラッグ中は全体を描き直さず、動かしている点とつながる通路だけを書き換える（描き直すとドラッグが切れるため）
+  svg.onpointermove = (e) => {
+    if (!drag) return;
+    Object.assign(drag, svgPoint(e, svg));
+    const g = svg.querySelector(`[data-node="${CSS.escape(drag.id)}"]`);
+    const shape = g.firstChild;
+    if (shape.tagName === 'rect') { shape.setAttribute('x', drag.x - 12); shape.setAttribute('y', drag.y - 12); }
+    else { shape.setAttribute('cx', drag.x); shape.setAttribute('cy', drag.y); }
+    const t = g.querySelector('text');
+    if (t) { t.setAttribute('x', drag.x + 18); t.setAttribute('y', drag.y + 5); }
+    svg.querySelectorAll('line').forEach((l) => {
+      if (l.dataset.a === drag.id) { l.setAttribute('x1', drag.x); l.setAttribute('y1', drag.y); }
+      if (l.dataset.b === drag.id) { l.setAttribute('x2', drag.x); l.setAttribute('y2', drag.y); }
+    });
+  };
+  svg.onpointerup = () => { if (drag) { drag = null; renderJson(); } };
+}
+
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { st.sel = null; render(); } });
+loadRooms();
+render();
+</script>
+</body>
+</html>

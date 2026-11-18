@@ -1,0 +1,386 @@
+{
+  "size": [
+    1200,
+    1696
+  ],
+  "version": 3,
+  "note": "紹介動画・モック表示用のサンプル公演ポスター（v3: 画像生成なし・図形のみ）。7枚は比較用に図形の作法をすべて変え、各モチーフ自体を答え『サンプル』の小さな謎にする。",
+  "publish": {
+    "dir": "public/sample-posters",
+    "quality": 86
+  },
+  "posters": [
+    {
+      "id": "01_hard",
+      "genre": "高難易度",
+      "title": "サンプル監獄\nからの\n最終脱獄",
+      "group": "難問工房サンプル",
+      "family": "影絵（光る幕に黒い形）",
+      "puzzle": "ピッグペン暗号。右下の解読表で読むと SAMPLE",
+      "layout": "stack-top-left",
+      "font": "Dela Gothic One",
+      "titleSize": 240,
+      "lineScale": [
+        0.7,
+        0.42,
+        1.0
+      ],
+      "colors": {
+        "paper": "#E9E2D0",
+        "title": "#1B1F2A",
+        "sub": "#1B1F2A",
+        "band": "#1B1F2A"
+      },
+      "decor": [
+        {
+          "type": "circle",
+          "x": 150,
+          "y": 700,
+          "w": 900,
+          "h": 900,
+          "color": "#F2C14E"
+        }
+      ],
+      "motif": {
+        "type": "pigpen",
+        "word": "SAMPLE",
+        "ink": "#1B1F2A",
+        "keyInk": "#1B1F2A",
+        "slot": {
+          "x": 72,
+          "y": 780,
+          "w": 1056,
+          "h": 740
+        }
+      }
+    },
+    {
+      "id": "02_beginner",
+      "genre": "初心者向け",
+      "title": "はじめての\nサンプル謎解き教室",
+      "group": "サンプル謎解き部",
+      "family": "色紙を切って貼った図形",
+      "puzzle": "上の対応表で、下の図形の並びをカナに置き換えると サンプル",
+      "layout": "block-bottom",
+      "font": "Zen Maru Gothic",
+      "fontQuery": "Zen+Maru+Gothic:wght@900",
+      "fontWeight": 900,
+      "titleSize": 104,
+      "colors": {
+        "paper": "#F6F1E4",
+        "title": "#F6F1E4",
+        "sub": "#F2B705",
+        "band": "#1F4237"
+      },
+      "motif": {
+        "type": "legend",
+        "ink": "#3A2E22",
+        "slot": {
+          "x": 72,
+          "y": 120,
+          "w": 1056,
+          "h": 960
+        },
+        "items": [
+          {
+            "shape": "circle",
+            "color": "#F2B705",
+            "kana": "サ"
+          },
+          {
+            "shape": "triangle",
+            "color": "#E8603C",
+            "kana": "ン"
+          },
+          {
+            "shape": "square",
+            "color": "#4FA37A",
+            "kana": "プ"
+          },
+          {
+            "shape": "star",
+            "color": "#4A7BD0",
+            "kana": "ル"
+          }
+        ],
+        "legendOrder": [
+          3,
+          0,
+          2,
+          1
+        ]
+      }
+    },
+    {
+      "id": "03_party",
+      "genre": "パーティ系",
+      "title": "サンプル王国の\nどたばた晩餐会",
+      "group": "パーティ謎サンプル",
+      "family": "リソ刷り2色の網点",
+      "puzzle": "黄色い網点の中のピンクの点だけを拾うと サンプル",
+      "layout": "band-bottom",
+      "font": "Mochiy Pop One",
+      "titleSize": 100,
+      "colors": {
+        "paper": "#FFF4E0",
+        "title": "#FFE800",
+        "sub": "#FFF4E0",
+        "band": "#A3165F"
+      },
+      "motif": {
+        "type": "dotword",
+        "lines": [
+          "サン",
+          "プル"
+        ],
+        "pitch": 26,
+        "on": "#FF48B0",
+        "off": "#FFD400",
+        "slot": {
+          "x": 72,
+          "y": 72,
+          "w": 1056,
+          "h": 1040
+        }
+      }
+    },
+    {
+      "id": "04_fes",
+      "genre": "フェス系",
+      "title": "サンプル\n大謎祭\nホール決戦",
+      "group": "サンプル謎フェス実行委員会",
+      "family": "巨大タイポグラフィ（舞台から昇る文字）",
+      "puzzle": "舞台の床から上半分だけ昇っている文字を読むと サンプル",
+      "layout": "mega-seat",
+      "font": "RocknRoll One",
+      "titleSize": 300,
+      "lineScale": [
+        0.5,
+        1.0,
+        0.66
+      ],
+      "lineIndent": [
+        0,
+        108,
+        0
+      ],
+      "lineColors": [
+        "#2335B5",
+        "#A82E15",
+        "#2335B5"
+      ],
+      "colors": {
+        "paper": "#EFEBE2",
+        "title": "#2335B5",
+        "sub": "#2335B5",
+        "band": "#2335B5"
+      },
+      "motif": {
+        "type": "rising",
+        "word": "サンプル",
+        "ink": "#E0441C",
+        "floor": "#2335B5",
+        "floorLine": "#3B4FD0",
+        "ray": "#F3CDBF",
+        "horizon": 0.64,
+        "sink": 0.2,
+        "slot": {
+          "x": 0,
+          "y": 800,
+          "w": 1200,
+          "h": 680
+        }
+      }
+    },
+    {
+      "id": "05_meta",
+      "genre": "メタ公演",
+      "title": "この公演は\n{本物|サンプル}です",
+      "group": "メタ劇場サンプル",
+      "family": "校正紙（トンボ・カラーバー・赤字）",
+      "puzzle": "ポスター自身が赤字で『本物』を『サンプル』に直している",
+      "layout": "proof",
+      "font": "Shippori Mincho B1",
+      "fontQuery": "Shippori+Mincho+B1:wght@800",
+      "fontWeight": 800,
+      "extraFonts": [
+        "Klee+One:wght@600"
+      ],
+      "titleSize": 168,
+      "colors": {
+        "paper": "#FBFAF7",
+        "title": "#141414",
+        "sub": "#141414",
+        "band": "#141414",
+        "accent": "#D12A2A"
+      },
+      "decor": [
+        {
+          "type": "cropmarks",
+          "color": "#141414",
+          "inset": 48
+        },
+        {
+          "type": "colorbar",
+          "x": 108,
+          "y": 1300,
+          "w": 560,
+          "h": 36
+        }
+      ]
+    },
+    {
+      "id": "06_cafe",
+      "genre": "カフェ謎",
+      "title": "サンプル喫茶と\n秘密のレシピ",
+      "group": "喫茶サンプル",
+      "family": "切り絵（紙の層と接地の影）",
+      "puzzle": "テーブルに映った逆さ文字を読むと サンプル",
+      "layout": "frame",
+      "font": "Kaisei Decol",
+      "fontQuery": "Kaisei+Decol:wght@700",
+      "fontWeight": 700,
+      "titleSize": 92,
+      "colors": {
+        "paper": "#F1E4C8",
+        "title": "#4A2C1D",
+        "sub": "#4A2C1D",
+        "band": "#4A2C1D"
+      },
+      "decor": [
+        {
+          "type": "arch",
+          "x": 300,
+          "y": 620,
+          "w": 600,
+          "h": 700,
+          "color": "#E6CFA0",
+          "shadow": true
+        }
+      ],
+      "motif": {
+        "type": "soda",
+        "word": "サンプル",
+        "glass": "#FBF3DF",
+        "soda": "#7CC08B",
+        "paper": "#FFFDF6",
+        "cherry": "#D7262E",
+        "straw": "#E8604C",
+        "table": "#4A2C1D",
+        "mirror": "#9C7A5E",
+        "ink": "#4A2C1D",
+        "slot": {
+          "x": 150,
+          "y": 560,
+          "w": 900,
+          "h": 1060
+        }
+      }
+    },
+    {
+      "id": "07_walk",
+      "genre": "周遊",
+      "title": "サンプル商店街\nぐるり周遊謎",
+      "group": "まちあるき謎サンプル",
+      "family": "路線図・街区のフラット図形",
+      "puzzle": "旗からルートどおりに駅を巡ると サ→ン→プ→ル（青い駅はおとり）",
+      "layout": "band-top",
+      "font": "Klee One",
+      "fontQuery": "Klee+One:wght@600",
+      "fontWeight": 600,
+      "titleSize": 100,
+      "colors": {
+        "paper": "#F6F4EE",
+        "title": "#F6F4EE",
+        "sub": "#F6F4EE",
+        "band": "#2B5F9E"
+      },
+      "motif": {
+        "type": "route",
+        "slot": {
+          "x": 120,
+          "y": 560,
+          "w": 960,
+          "h": 960
+        },
+        "block": "#D6E2F0",
+        "line": "#E63B2E",
+        "paper": "#F6F4EE",
+        "decoy": "#2B5F9E",
+        "decoyFill": "#2B5F9E",
+        "ink": "#2B5F9E",
+        "path": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            3
+          ]
+        ],
+        "stations": [
+          [
+            [
+              1,
+              1
+            ],
+            "サ"
+          ],
+          [
+            [
+              2,
+              2
+            ],
+            "ン"
+          ],
+          [
+            [
+              3,
+              3
+            ],
+            "プ"
+          ],
+          [
+            [
+              4,
+              3
+            ],
+            "ル"
+          ]
+        ],
+        "decoys": [
+          [
+            [
+              3,
+              1
+            ],
+            "カ"
+          ],
+          [
+            [
+              1,
+              3
+            ],
+            "ミ"
+          ],
+          [
+            [
+              4,
+              1
+            ],
+            "ト"
+          ]
+        ]
+      }
+    }
+  ]
+}
