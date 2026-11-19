@@ -90,3 +90,138 @@ test('壊れた地図はエラーにする', () => {
   assert.throws(() => new VenueRouter({ floors: [{ id: '1F' }], nodes: [{ id: 'x', floor: '9F', x: 0, y: 0 }] }));
   assert.throws(() => new VenueRouter({ floors: [{ id: '1F' }], nodes: [], edges: [['a', 'b']] }));
 });
+
+/* ─────────── 屋外（周辺地図）・メートル・出入口・link（docs/OUTDOOR_ROUTE.md） ─────────── */
+// 本館（1F・2F）と、外の周辺地図（OUT）。別館は外の地図の上の部屋。1px = 0.1m（屋内）／ 1m（屋外）
+const CAMPUS = {
+  floors: [
+    { id: '1F', label: '1階', metersPerPx: 0.1 },
+    { id: '2F', label: '2階', metersPerPx: 0.1 },
+    { id: 'OUT', label: '屋外', outdoor: true, metersPerPx: 1 },
+  ],
+  nodes: [
+    { id: 'hall', floor: '1F', x: 0, y: 0, room: 'ホール' },
+    { id: 'lobby', floor: '1F', x: 100, y: 0 },
+    { id: 'ent1', floor: '1F', x: 100, y: 50, kind: 'entrance', name: '正面入口', link: 'main' },
+    { id: 'back1', floor: '1F', x: -1000, y: 0, kind: 'entrance', name: '裏口', link: 'back' },
+    { id: 'st1', floor: '1F', x: 0, y: 100, kind: 'stairs', name: '南階段', link: 'south' },
+    { id: 'st2', floor: '2F', x: 0, y: 100, kind: 'stairs', name: '南階段', link: 'south' },
+    { id: 'room7', floor: '2F', x: 0, y: 200, room: '第7会議室' },
+    { id: 'entO', floor: 'OUT', x: 0, y: 0, kind: 'entrance', name: '本館 正面入口', link: 'main' },
+    { id: 'backO', floor: 'OUT', x: -90, y: 0, kind: 'entrance', name: '本館 裏口', link: 'back' },
+    { id: 'corner', floor: 'OUT', x: 0, y: 120 },
+    { id: 'annexB', floor: 'OUT', x: -40, y: 120, room: '別館B', note: '北西の角を曲がってすぐ' },
+  ],
+  edges: [
+    ['hall', 'lobby'], ['lobby', 'ent1'], ['hall', 'back1'], ['hall', 'st1'], ['st2', 'room7'],
+    ['entO', 'corner'], ['corner', 'annexB'], ['backO', 'annexB'],
+  ],
+};
+
+test('屋外：link でつながり、出入口の名前は階ごとに呼び分ける', () => {
+  const r = new VenueRouter(CAMPUS).route('ホール', '別館B');
+  assert.deepEqual(r.segments.map((s) => s.floor.id), ['1F', 'OUT']);
+  assert.equal(r.segments[0].exitVia.kind, 'entrance');
+  assert.equal(r.segments[0].exitVia.name, '正面入口');
+  assert.equal(r.segments[1].enterVia.name, '本館 正面入口');
+  assert.equal(r.segments[0].exitVia.toFloor.outdoor, true);
+  assert.equal(r.note, '北西の角を曲がってすぐ');
+});
+
+test('屋外：重みはメートル。屋内の px が近くても、実際に近い出口を選ぶ', () => {
+  // 正面入口：屋内 100+50px=15m ＋ 出入口 5m ＋ 屋外 120+40=160m ＝ 180m
+  // 裏口　　：屋内 1000px=100m ＋ 出入口 5m ＋ 屋外 √(50²+120²)=130m ＝ 235m（px なら 1000+130 で、こちらも遠い）
+  const r = new VenueRouter(CAMPUS).route('ホール', '別館B');
+  assert.deepEqual(r.segments[1].points.map((p) => p.id), ['entO', 'corner', 'annexB']);
+  // 屋外を px のまま数えると、裏口（屋外 130）が正面（160）より近いと誤る。縮尺で屋内を 1/10 に数えるから正面が選ばれる
+  assert.equal(r.walk.meters, 180);
+  assert.equal(r.walk.outdoorMeters, 160);
+  assert.equal(r.walk.minutes, 3); // 180 ÷ 80 = 2.25 → 切り上げ 3
+});
+
+test('屋外：2 階から別館へは、階段 → 1 階 → 正面入口 → 外。徒歩の時間に階段も数える', () => {
+  const r = new VenueRouter(CAMPUS).route('第7会議室', '別館B');
+  assert.deepEqual(r.segments.map((s) => s.floor.id), ['2F', '1F', 'OUT']);
+  assert.equal(r.segments[0].exitVia.name, '南階段');
+  assert.equal(r.segments[1].exitVia.name, '正面入口');
+  // 2F 10m ＋ 階段 15m ＋ 1F (100 + 100 + 50)px=25m ＋ 出入口 5m ＋ 屋外 160m = 215m → 3 分
+  assert.equal(r.walk.meters, 215);
+  assert.equal(r.walk.minutes, 3);
+});
+
+test('屋外を通らないルートには徒歩の時間を付けない', () => {
+  const r = new VenueRouter(CAMPUS).route('ホール', '第7会議室');
+  assert.equal(r.walk, null);
+  assert.equal(r.note, '');
+  assert.equal(r.segments[0].exitVia.kind, 'stairs');
+});
+
+test('link：3 つの階にまたがる同じ link は、隣り合う階どうしだけをつなぐ（1F と 3F を直接つながない）', () => {
+  const map = {
+    floors: [{ id: '1F', metersPerPx: 0.1 }, { id: '2F', metersPerPx: 0.1 }, { id: '3F', metersPerPx: 0.1 }],
+    nodes: [
+      { id: 'a', floor: '1F', x: 0, y: 0, room: 'A' },
+      { id: 's1', floor: '1F', x: 0, y: 0, kind: 'stairs', name: '階段', link: 'S' },
+      { id: 's3', floor: '3F', x: 0, y: 0, kind: 'stairs', name: '階段', link: 'S' },
+      { id: 's2', floor: '2F', x: 0, y: 0, kind: 'stairs', name: '階段', link: 'S' },
+      { id: 'c', floor: '3F', x: 0, y: 0, room: 'C' },
+    ],
+    edges: [['a', 's1'], ['s3', 'c']],
+  };
+  const router = new VenueRouter(map);
+  assert.deepEqual(router.adj.get('s1').map((e) => e.to).sort(), ['a', 's2']);
+  assert.deepEqual(router.adj.get('s3').map((e) => e.to).sort(), ['c', 's2']);
+  assert.deepEqual(router.route('A', 'C').segments.map((s) => s.floor.id), ['1F', '3F']);
+});
+
+test('link：edges に書いた接続があれば二重につながない', () => {
+  const map = {
+    floors: [{ id: '1F' }, { id: '2F' }],
+    nodes: [
+      { id: 'x1', floor: '1F', x: 0, y: 0, kind: 'stairs', link: 'S', room: 'X' },
+      { id: 'x2', floor: '2F', x: 0, y: 0, kind: 'stairs', link: 'S', room: 'Y' },
+    ],
+    edges: [{ a: 'x1', b: 'x2', weight: 7 }],
+  };
+  const router = new VenueRouter(map);
+  assert.deepEqual(router.adj.get('x1'), [{ to: 'x2', w: 7 }]);
+});
+
+test('互換：縮尺の無い今の地図は px のまま（階段 400）、徒歩の時間は null', () => {
+  const router = new VenueRouter(MAP);
+  assert.equal(router.metric, false);
+  assert.ok(router.adj.get('e1').some((e) => e.to === 'e2' && e.w === 400));
+  const r = router.route('メインホール', 'ルームA');
+  assert.equal(r.walk, null);
+  assert.equal(r.segments[0].exitVia.name, '東階段');
+  assert.equal(r.segments[1].enterVia.name, '東階段');
+});
+
+test('屋外：エレベーターで 1 階（地図なし）へ降りて出入口から外へ。種類は出入口、もう一方の名前と辺の重みを使う', () => {
+  const map = {
+    floors: [
+      { id: '3F', label: '3階', metersPerPx: 0.1 },
+      { id: '5F', label: '5階', metersPerPx: 0.1 },
+      { id: 'OUT', label: '屋外', outdoor: true, metersPerPx: 1 },
+    ],
+    nodes: [
+      { id: 'r5', floor: '5F', x: 0, y: 0, room: '会議室1' },
+      { id: 'ev5', floor: '5F', x: 100, y: 0, kind: 'elevator', name: 'エレベーター' },
+      { id: 'ev3', floor: '3F', x: 100, y: 0, kind: 'elevator', name: 'エレベーター' },
+      { id: 'door', floor: 'OUT', x: 0, y: 0, kind: 'entrance', name: '1階 出入口' },
+      { id: 'plaza', floor: 'OUT', x: 300, y: 400, room: '駅前広場' },
+    ],
+    edges: [['r5', 'ev5'], { a: 'ev5', b: 'ev3', weight: 10 }, { a: 'ev3', b: 'door', weight: 40 }, ['door', 'plaza']],
+  };
+  const r = new VenueRouter(map).route('会議室1', '駅前広場');
+  // 3F はエレベーターの 1 点だけなので省き、5F から直接外へ
+  assert.deepEqual(r.segments.map((s) => s.floor.id), ['5F', 'OUT']);
+  assert.equal(r.segments[0].exitVia.kind, 'entrance');
+  assert.equal(r.segments[0].exitVia.name, 'エレベーター');
+  assert.equal(r.segments[0].exitVia.through, '1階 出入口');
+  assert.equal(r.segments[1].enterVia.name, '1階 出入口');
+  assert.equal(r.segments[1].enterVia.through, 'エレベーター');
+  // 5F 10m ＋ エレベーター 10m ＋ 1 階へ降りて出入口まで 40m ＋ 屋外 500m ＝ 560m → 7 分
+  assert.equal(r.walk.meters, 560);
+  assert.equal(r.walk.minutes, 7);
+});

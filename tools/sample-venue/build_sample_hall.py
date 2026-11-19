@@ -1,22 +1,32 @@
 #!/usr/bin/env python3
-"""浪速区民センター（大阪市浪速区稲荷）の簡略フロアマップ（3 フロア）と venue_map.json を生成する。
+"""サンプル会場（3 フロアの屋内図と、建物の外の周辺地図）と venue_map.json を生成する。
 
-施設の公式サイトのフロアマップ（https://www.osakacommunity.jp/naniwa-center/floor/）を参考に、
-部屋の並びと通路だけを残して描き直した「サンプル（非公式）」の図。公式の図の画像そのものは使っていない。
-寸法・扉の位置は簡略化しており、実際とは異なる。
+実在の会場の公式フロアマップを参考に、部屋の並びと通路だけを残して描き直した「サンプル」の図。公式の図の画像そのものは使っていない。
+寸法・扉の位置は簡略化しており、実際とは異なる。画面にもファイルにも、実在の施設名・通りの名前は出さない。
 西側の階段は非常階段のため、地図には描くが経路には使わない（階の移動は南階段だけ）。
 交流スペース・フリースペースは壁のない広場で、通路と続いている。
-座標は公式 1F・3F の図（1722x1128）にそろえ、2F（1172x758）は 1.47 倍して重ねた。
+座標は参考にした 1F・3F の図（1722x1128）にそろえ、2F（1172x758）は 1.47 倍して重ねた。
 
-  python3 tools/sample-venue/build_naniwa.py
-出力: public/venues/naniwa/{1f,2f,3f}.svg, public/venues/naniwa/venue_map.json
+建物の外（周辺地図・別館A/B）は OpenStreetMap のデータから作る（tools/outdoor-map/osm_outdoor.py、docs/OUTDOOR_ROUTE.md）。
+  - 取得したデータは tools/sample-venue/osm_cache.json に保存（ODbL）。あれば通信しない。名前（name）は保存しない
+  - 屋内図は、OSM の本館の形の最小外接長方形に重ねる。正面入口（屋内図の下側）は東向き
+  - 本館・別館A・別館B は一般名。周辺地図に通りの名前も描かない
+  - 別館の入口は「外壁のうち、いちばん道に近い点」の推定。直すときは tools/sample-venue/doors.json に
+    緯度経度を書く（会場マップ編集ツールで点を動かすと、その点の緯度経度が出る）。作り直しても残る
+
+  python3 tools/sample-venue/build_sample_hall.py
+出力: public/venues/sample-hall/{1f,2f,3f,outdoor}.svg, public/venues/sample-hall/venue_map.json
 """
 import json
+import math
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'public' / 'venues' / 'naniwa'
+OUT = ROOT / 'public' / 'venues' / 'sample-hall'
 OUT.mkdir(parents=True, exist_ok=True)
+sys.path.insert(0, str(ROOT / 'tools' / 'outdoor-map'))
+from osm_outdoor import OutdoorMap  # noqa: E402
 
 W, H = 1720, 1130
 FONT = "'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP','IPAGothic',sans-serif"
@@ -97,9 +107,11 @@ GRAPH = {
         ],
         'rooms': [('r-3', 278, 270, '第3会議室'), ('r-2', 442, 270, '第2会議室'), ('r-1', 626, 270, '第1会議室'), ('r-h', 1150, 720, 'ホール', ['館内全域(受付:ホール)'])],
         'stairs': [('st-s', 762, 890, '南階段')],
+        # 建物の出入口（周辺地図の同じ link の点とつながる）
+        'entrances': [('ent', 990, 896, '正面入口', 'main-entrance')],
         'edges': [('c-w', 'c-3'), ('c-3', 'c-2'), ('c-2', 'c-1'), ('c-1', 'c-e'), ('c-e', 'l-n'), ('l-n', 'l-c'), ('l-c', 'l-s'),
                   ('l-c', 'h-d'), ('h-d', 'r-h'), ('l-s', 's-in'), ('s-in', 'st-s'),
-                  ('c-3', 'r-3'), ('c-2', 'r-2'), ('c-1', 'r-1')],
+                  ('c-3', 'r-3'), ('c-2', 'r-2'), ('c-1', 'r-1'), ('ent', 'l-s'), ('ent', 'h-d')],
     },
     '2F': {
         'nodes': [
@@ -179,11 +191,73 @@ def svg_floor(spec):
         out.append(text(ex, ey + 98, '正面入口', 32))
     # 階の名前・サンプルの表示（はっきり・常に読める位置に）
     out.append(text(48, 1100, spec['label'], 56, INK, 900, 'start', 'opacity=".22"'))
-    out.append(f'<rect x="{W - 640}" y="{H - 92}" width="604" height="64" rx="8" fill="#facc15"/>')
-    out.append(text(W - 338, H - 48, 'サンプル（非公式）・簡略図', 36, INK, 900))
-    out.append(text(W - 36, 64, '浪速区民センターの公式フロアマップを参考に簡略化', 26, '#8a8d99', 700, 'end'))
+    # サンプルであることは、右下に灰色の小さな文字で添えるだけ（枠で目立たせない。施設名は出さない）
+    out.append(text(W - 36, H - 30, 'この地図はサンプルです', 26, '#9a9db0', 700, 'end'))
     out.append('</svg>\n')
     return '\n'.join(out)
+
+
+# ─────────── 屋内図と周辺地図の重ね方 ───────────
+# 屋内図で建物の外形にあたる四角（3 フロア共通の座標）
+OUTLINE = (35, 107, 1647, 980)
+OSM_CACHE = ROOT / 'tools' / 'sample-venue' / 'osm_cache.json'
+MAIN_WAYS = [254426947]                 # OSM：本館（屋内図の建物）
+ANNEX_A_WAYS = [254426981, 254426956]   # OSM：同じ街区の西側の建物（サンプルでは「別館A」）
+ANNEX_B_WAYS = [254427011]              # OSM：同じ街区の北西の建物（サンプルでは「別館B」）
+DOORS_FILE = ROOT / 'tools' / 'sample-venue' / 'doors.json'
+
+
+def door_override(m, room):
+    """doors.json に緯度経度があれば、その位置（px）。無ければ None（推定を使う）"""
+    if not DOORS_FILE.exists():
+        return None
+    v = json.loads(DOORS_FILE.read_text(encoding='utf-8')).get(room)
+    if isinstance(v, dict) and 'lat' in v and 'lon' in v:
+        return m.latlon_px(float(v['lat']), float(v['lon']))
+    return None
+
+
+def footprint_of(m):
+    """屋内図の OUTLINE を、OSM の本館の最小外接長方形に重ねる。屋内図の下（+y）を東向きの短辺の向きに合わせる"""
+    c, (long_px, short_px), _u, v = m.footprint_box(MAIN_WAYS)
+    if v[0] < 0:  # 短辺の向きを東向き（+x）に
+        v = (-v[0], -v[1])
+    theta = math.degrees(math.atan2(-v[0], v[1]))
+    return {'floor': 'OUT', 'outline': list(OUTLINE), 'center': [round(c[0], 1), round(c[1], 1)],
+            'size': [round(long_px, 1), round(short_px, 1)], 'rotation': round(theta, 2)}
+
+
+def plan_to_out(fp, x, y):
+    """屋内図の座標 → 周辺地図の座標（RouteView のズームと同じ式）"""
+    x0, y0, x1, y1 = fp['outline']
+    sx, sy = fp['size'][0] / (x1 - x0), fp['size'][1] / (y1 - y0)
+    dx, dy = (x - (x0 + x1) / 2) * sx, (y - (y0 + y1) / 2) * sy
+    t = math.radians(fp['rotation'])
+    return (fp['center'][0] + dx * math.cos(t) - dy * math.sin(t), fp['center'][1] + dx * math.sin(t) + dy * math.cos(t))
+
+
+def build_outdoor():
+    m = OutdoorMap.load(OSM_CACHE, center=(34.6649, 135.4902), radius_m=190, keep_names=False)
+    m.set_view(MAIN_WAYS + ANNEX_A_WAYS + ANNEX_B_WAYS, margin_m=42)
+    fp = footprint_of(m)
+    ex, ey = GRAPH['1F']['entrances'][0][1:3]
+    door_main = plan_to_out(fp, ex, ey + 6)
+    door_a = door_override(m, '別館A') or m.door_of(ANNEX_A_WAYS)
+    door_b = door_override(m, '別館B') or m.door_of(ANNEX_B_WAYS)
+    m.add_point('out-ent-main', door_main, kind='entrance', name='本館 正面入口', link='main-entrance')
+    m.add_point('out-r-a', door_a, room='別館A', note='本館の裏手・西側の通り沿い')
+    m.add_point('out-r-b', door_b, room='別館B', note='西側の通り沿い・北の角の近く')
+    m.set_focus(MAIN_WAYS + ANNEX_A_WAYS + ANNEX_B_WAYS, margin_m=12)
+    svg = m.svg([
+        {'ways': MAIN_WAYS, 'label': '本館', 'door': door_main, 'size': 44},
+        {'ways': ANNEX_A_WAYS, 'label': '別館A', 'door': door_a, 'size': 30},
+        {'ways': ANNEX_B_WAYS, 'label': '別館B', 'door': door_b, 'size': 30},
+    ], badge='この地図はサンプルです', street_labels=False)
+    (OUT / 'outdoor.svg').write_text(svg, encoding='utf-8')
+    floor, nodes, edges = m.venue_floor('OUT', '屋外', './outdoor.svg')
+    # 屋内の縮尺：外接長方形の長辺・短辺の m/px の平均
+    mpp_in = m.view['mpp'] * (fp['size'][0] / (OUTLINE[2] - OUTLINE[0]) + fp['size'][1] / (OUTLINE[3] - OUTLINE[1])) / 2
+    return fp, round(mpp_in, 5), floor, nodes, edges
 
 
 def build_graph():
@@ -200,24 +274,26 @@ def build_graph():
                 node['aliases'] = r[4]
             nodes.append(node)
         for nid, x, y, name in g['stairs']:
-            nodes.append({'id': f'{p}-{nid}', 'floor': fid, 'x': x, 'y': y, 'kind': 'stairs', 'name': name})
-            stairs.setdefault(name, []).append(f'{p}-{nid}')
+            # 同じ名前の階段は link でつなぐ（隣り合う階どうし。重みは VenueRouter の既定）
+            nodes.append({'id': f'{p}-{nid}', 'floor': fid, 'x': x, 'y': y, 'kind': 'stairs', 'name': name, 'link': f'stairs-{name}'})
+        for nid, x, y, name, link in g.get('entrances', []):
+            nodes.append({'id': f'{p}-{nid}', 'floor': fid, 'x': x, 'y': y, 'kind': 'entrance', 'name': name, 'link': link})
         edges += [[f'{p}-{a}', f'{p}-{b}'] for a, b in g['edges']]
-    for name, ids in stairs.items():
-        for a, b in zip(ids, ids[1:]):
-            edges.append({'a': a, 'b': b, 'weight': 400})
     return nodes, edges
 
 
 for fid, spec in FLOORS.items():
     (OUT / f'{fid.lower()}.svg').write_text(svg_floor(spec), encoding='utf-8')
 nodes, edges = build_graph()
+fp, mpp_in, out_floor, out_nodes, out_edges = build_outdoor()
 venue = {
-    'name': '浪速区民センター（サンプル・非公式の簡略図）',
-    'floors': [{'id': fid, 'label': spec['label'], 'level': i + 1, 'image': f'./{fid.lower()}.svg', 'width': W, 'height': H}
-               for i, (fid, spec) in enumerate(FLOORS.items())],
-    'nodes': nodes,
-    'edges': edges,
+    'name': 'サンプル会場（簡略図）',
+    'attribution': '屋外の地図データ © OpenStreetMap contributors（ODbL 1.0。LICENSE-OSM.md）',
+    'floors': [{'id': fid, 'label': spec['label'], 'level': i + 1, 'image': f'./{fid.lower()}.svg', 'width': W, 'height': H,
+                'metersPerPx': mpp_in, 'footprint': fp}
+               for i, (fid, spec) in enumerate(FLOORS.items())] + [out_floor],
+    'nodes': nodes + out_nodes,
+    'edges': edges + out_edges,
 }
 (OUT / 'venue_map.json').write_text(json.dumps(venue, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-print(f'floors {len(venue["floors"])}, nodes {len(nodes)}, edges {len(edges)}')
+print(f"floors {len(venue['floors'])}, nodes {len(venue['nodes'])}, edges {len(venue['edges'])}")

@@ -22,8 +22,11 @@ let heroMotion = null;
 const urlParams = new URLSearchParams(window.location.search);
 const EVENT_KEY = urlParams.get('event') || 'default';
 const GAS_API_URL = urlParams.get('api') || (import.meta.env && import.meta.env.VITE_GAS_API_URL) || '';
-/** ?mock=1 … 架空のサンプル会館、?mock=sample（= naniwa）… 浪速区民センターの簡略図（どちらもサンプルの公演）。/sample/ は ?mock=sample へ転送 */
-const MOCK_SOURCES = { 1: './mock_data.json', sample: './samples/naniwa.json', naniwa: './samples/naniwa.json' };
+/**
+ * ?mock=1 … 架空のサンプル会館、?mock=sample … 屋外の周辺地図つきのサンプル会場、
+ * ?mock=sample2 … ビルの 3〜5 階と、駅前の広場までの広めの周辺地図（どれもサンプルの公演）。/sample/・/sample2/ はそれぞれへ転送
+ */
+const MOCK_SOURCES = { 1: './mock_data.json', sample: './samples/sample-hall.json', sample2: './samples/sample-hall2.json' };
 const MOCK_URL = MOCK_SOURCES[urlParams.get('mock')] || null;
 const FORCE_MOCK = Boolean(MOCK_URL);
 /** 表示用キャッシュの鍵：サンプルは本番と分ける（サンプルを開いた後に本番を開くと、一瞬サンプルが出てしまうため） */
@@ -35,7 +38,9 @@ const state = {
   showsMap: new Map(),
   currentDayNum: 1,
   selectedIds: [],
+  pickedTitles: new Set(),
   conflictIds: new Set(),
+  duplicateIds: new Set(),
   unlockedShows: new Set(),
   unlockedUrls: {},
   isSharePreviewMode: false,
@@ -181,15 +186,17 @@ function syncSelectionState() {
     Boolean(state.config.allowZeroMinTransfer)
   );
   state.conflictIds = conflictIds;
+  state.duplicateIds = findDuplicateShowIds(state.selectedIds, state.showsMap);
 
   timetableView.updateSelectionVisuals(state.selectedIds, state.conflictIds);
-  selectionBar.render(state.selectedIds, state.showsMap, state.conflictIds, getActiveDayStr());
+  selectionBar.render(state.selectedIds, state.showsMap, state.conflictIds, getActiveDayStr(), state.duplicateIds);
   ticketView.setContext(state.config, state.allShows, state.selectedIds);
   scheduleDialog.updateState({
     config: state.config,
     allShows: state.allShows,
     selectedIds: state.selectedIds,
     conflictIds: state.conflictIds,
+    duplicateIds: state.duplicateIds,
     activeDay: state.currentDayNum,
     unlockedShows: state.unlockedShows,
     unlockedUrls: state.unlockedUrls,
@@ -198,6 +205,10 @@ function syncSelectionState() {
     isMatchFn: (show) => (filterModal ? filterModal.doesShowMatchFilter(show) : true),
     isFilterActiveFn: () => (filterModal ? filterModal.hasMatchFilter() : false)
   });
+
+  if (filterModal && filterModal.showSelectedOnly) {
+    renderTimetable();
+  }
 }
 
 /**
@@ -247,8 +258,25 @@ function renderTimetable() {
     unlockedUrls: state.unlockedUrls,
     selectedIds: state.selectedIds,
     conflictIds: state.conflictIds,
+    pickedTitles: state.pickedTitles,
     isMatchFn: (show) => (filterModal ? filterModal.doesShowMatchFilter(show) : true)
   });
+}
+
+function findDuplicateShowIds(selectedIds, showsMap) {
+  const byTitle = new Map();
+  selectedIds.forEach(id => {
+    const show = showsMap.get(id);
+    if (!show || !show.title) return;
+    const list = byTitle.get(show.title) || [];
+    list.push(id);
+    byTitle.set(show.title, list);
+  });
+  const ids = new Set();
+  byTitle.forEach(list => {
+    if (list.length >= 2) list.forEach(id => ids.add(id));
+  });
+  return ids;
 }
 
 function handleToggleShow(showId) {
@@ -301,6 +329,16 @@ function handleRemoveShow(showId) {
       Analytics.schedulePlanSync(state.selectedIds);
     }
   }
+}
+
+function handleToggleTitle(title) {
+  if (!title) return;
+  if (state.pickedTitles.has(title)) state.pickedTitles.delete(title);
+  else state.pickedTitles.add(title);
+  if (!state.isSharePreviewMode) {
+    Storage.savePickedTitles(state.eventStorageId, state.pickedTitles);
+  }
+  renderTimetable();
 }
 
 function handleClearAll() {
@@ -379,6 +417,10 @@ function applyLoadedData(rawData) {
 
   const savedExcluded = Storage.loadExcludedTitles(state.eventStorageId);
   filterModal.setContext(shows, savedExcluded);
+  const knownTitles = new Set(shows.map(s => s.title));
+  state.pickedTitles = new Set(
+    Storage.loadPickedTitles(state.eventStorageId).filter(title => knownTitles.has(title))
+  );
 
   const sharedPlanIds = Storage.decodeSharePlan(window.location.search);
   const shareBanner = document.getElementById('share-preview-banner');
@@ -503,6 +545,7 @@ function bindGlobalUiEvents() {
 async function bootstrap() {
   timetableView = new TimetableView({
     onToggleShow: handleToggleShow,
+    onToggleTitle: handleToggleTitle,
     onPromptLock: handlePromptLock,
     onOpenSpec: (showId, invoker) => specPopup.openFrom(showId, invoker)
   });
@@ -517,6 +560,7 @@ async function bootstrap() {
   });
 
   filterModal = new FilterModal({
+    isTitlePicked: (title) => state.pickedTitles.has(title) || state.selectedIds.some(id => state.showsMap.get(id)?.title === title),
     onFilterChange: () => renderTimetable(),
     onExcludeChange: (excludedTitlesSet) => {
       Storage.saveExcludedTitles(state.eventStorageId, excludedTitlesSet);
@@ -542,7 +586,13 @@ async function bootstrap() {
   const ttGrid = document.getElementById('timetable-grid');
   const ttSection = document.getElementById('timetable-section');
   if (stickyNav && ttScroller && ttGrid && ttSection) {
-    new ColTitleStrip({ nav: stickyNav, scroller: ttScroller, grid: ttGrid, section: ttSection });
+    new ColTitleStrip({
+      nav: stickyNav,
+      scroller: ttScroller,
+      grid: ttGrid,
+      section: ttSection,
+      onToggleTitle: handleToggleTitle
+    });
   }
 
   // 1. キャッシュがあれば即時表示（SWR）

@@ -12,6 +12,7 @@ export class TimetableView {
     this.config = {};
     this.PIXELS_PER_HOUR = 74;
     this.onToggleShow = callbacks.onToggleShow;
+    this.onToggleTitle = callbacks.onToggleTitle;
     this.onPromptLock = callbacks.onPromptLock;
     this.onOpenSpec = callbacks.onOpenSpec;
     this._bindEvents();
@@ -42,6 +43,13 @@ export class TimetableView {
         if (this.onPromptLock) {
           this.onPromptLock(groupKey, encrypted, e);
         }
+        return;
+      }
+
+      const titleBtn = e.target.closest('.show-title-btn');
+      if (titleBtn) {
+        const title = titleBtn.getAttribute('data-show-title');
+        if (title && this.onToggleTitle) this.onToggleTitle(title);
         return;
       }
 
@@ -190,7 +198,7 @@ export class TimetableView {
     return { topPx, heightPx, endMin, phaseHeight };
   }
 
-  render(shows, { unlockedShows = new Set(), unlockedUrls = {}, selectedIds = [], conflictIds = new Set(), isMatchFn = () => true } = {}) {
+  render(shows, { unlockedShows = new Set(), unlockedUrls = {}, selectedIds = [], conflictIds = new Set(), pickedTitles = new Set(), isMatchFn = () => true } = {}) {
     const section = document.getElementById('timetable-section');
     const grid = document.getElementById('timetable-grid');
     if (section) section.classList.remove('hidden');
@@ -211,7 +219,16 @@ export class TimetableView {
       return;
     }
 
-    grid.innerHTML = titles.map((title, index) => {
+    const visibleTitles = new Set(titles);
+    const bandsHtml = shows.map(show => {
+      if (!show.startTime || !selectedSet.has(show.id) || !visibleTitles.has(show.title)) return '';
+      const showFlexible = ConflictDetector.isFlexibleShow(show);
+      const { topPx, heightPx } = this._computeCardGeometry(show, showFlexible, startHour, endHour);
+      const conflictClass = conflictIds.has(show.id) ? ' is-conflict' : '';
+      return `<div class="time-band${conflictClass}" style="top:calc(var(--col-header-h) + ${topPx}px);height:${heightPx}px;"></div>`;
+    }).join('');
+
+    grid.innerHTML = `<div class="time-bands" aria-hidden="true">${bandsHtml}</div>` + titles.map((title, index) => {
       const groupShows = shows.filter(s => s.title === title);
       const base = groupShows[0];
       const isFlexible = ConflictDetector.isFlexibleShow(base);
@@ -276,14 +293,21 @@ export class TimetableView {
       }).join('');
 
       const feeText = this._formatFee(base.fee);
+      const isPicked = pickedTitles.has(title);
 
       return `
-        <div class="venue-col" style="background-size: 100% ${Math.max(12, ((this.config.stepMin || 30) / 60) * this.PIXELS_PER_HOUR)}px;">
+        <div class="venue-col ${isPicked ? 'is-title-picked' : ''}" style="background-size: 100% ${Math.max(12, ((this.config.stepMin || 30) / 60) * this.PIXELS_PER_HOUR)}px;">
           <div class="col-header">
             ${isHeaderNoise ? '<div class="mystic-shimmer"></div>' : ''}
             <div>
               <span class="group-badge">${Parser.escapeHtml(base.groupName || '出展団体')}</span>
-              <h3 class="show-title ${isHeaderNoise ? 'mystic-text' : ''}">${Parser.escapeHtml(base.title)}</h3>
+              <button type="button"
+                class="show-title-btn ${isPicked ? 'is-picked' : ''}"
+                data-show-title="${Parser.escapeHtml(title)}"
+                aria-pressed="${isPicked ? 'true' : 'false'}"
+                aria-label="${Parser.escapeHtml(title)}を選択">
+                <span class="show-title ${isHeaderNoise ? 'mystic-text' : ''}">${Parser.escapeHtml(title)}</span>
+              </button>
             </div>
             <button type="button"
               class="visual-tap-btn"
@@ -320,5 +344,32 @@ export class TimetableView {
       card.classList.toggle('is-selected', selectedSet.has(id));
       card.classList.toggle('is-conflict', conflictIds.has(id));
     });
+    this._syncTimeBands(selectedSet, conflictIds);
+  }
+
+  /**
+   * 選択中の時間帯を、表の横いっぱいに列の下へ敷く
+   */
+  _syncTimeBands(selectedSet, conflictIds) {
+    const grid = document.getElementById('timetable-grid');
+    if (!grid) return;
+    let layer = grid.querySelector('.time-bands');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.className = 'time-bands';
+      layer.setAttribute('aria-hidden', 'true');
+      grid.prepend(layer);
+    }
+    const bands = [];
+    grid.querySelectorAll('.show-card').forEach(card => {
+      const id = card.getAttribute('data-show-id');
+      if (!selectedSet.has(id)) return;
+      const top = parseFloat(card.style.top);
+      const height = parseFloat(card.style.height);
+      if (!Number.isFinite(top) || !Number.isFinite(height)) return;
+      const conflictClass = conflictIds.has(id) ? ' is-conflict' : '';
+      bands.push(`<div class="time-band${conflictClass}" style="top:calc(var(--col-header-h) + ${top}px);height:${height}px;"></div>`);
+    });
+    layer.innerHTML = bands.join('');
   }
 }

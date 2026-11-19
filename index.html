@@ -92,6 +92,10 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <span>時間が重なっている公演があります</span>
     </div>
+    <div id="selection-duplicate-alert" class="selection-conflict-alert hidden">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>同じ公演を選択しています</span>
+    </div>
 
     <div id="selected-chips-row" class="selected-chips-row no-scrollbar" role="region" aria-label="選択中の公演一覧" tabindex="0"></div>
 
@@ -159,6 +163,10 @@
         <div id="schedule-conflict-banner" class="tl-conflict-banner hidden">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           <span>時間が重なっている公演があります。調整してください。</span>
+        </div>
+        <div id="schedule-duplicate-banner" class="tl-conflict-banner hidden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>同じ公演を選択しています。</span>
         </div>
 
         <div id="schedule-panel-timeline" class="tl-list"></div>
@@ -252,6 +260,16 @@
       </div>
 
       <div class="dialog-body custom-scroll">
+        <div class="filter-box">
+          <label class="filter-check-row">
+            <input type="checkbox" id="filter-selected-only">
+            <span>
+              <span class="filter-check-title">選択した公演のみ表示</span>
+              <span class="filter-check-note">公演名を押すと、その公演を選択できます</span>
+            </span>
+          </label>
+        </div>
+
         <div class="filter-box">
           <div class="filter-box-label">
             <span>難易度で絞り込む</span>

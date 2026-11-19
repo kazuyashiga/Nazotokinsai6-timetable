@@ -67,10 +67,11 @@ export class SelectionBar {
     }
   }
 
-  render(selectedIds, showsMap, conflictIds, activeDay) {
+  render(selectedIds, showsMap, conflictIds, activeDay, duplicateIds = new Set()) {
     const bar = document.getElementById('selection-bar');
     const chipsEl = document.getElementById('selected-chips-row');
     const alertEl = document.getElementById('selection-conflict-alert');
+    const duplicateEl = document.getElementById('selection-duplicate-alert');
     const ctaTextEl = document.getElementById('selection-cta-text');
     if (!bar || !chipsEl) return;
 
@@ -78,6 +79,7 @@ export class SelectionBar {
       bar.classList.add('is-hidden');
       chipsEl.innerHTML = '';
       if (alertEl) alertEl.classList.add('hidden');
+      if (duplicateEl) duplicateEl.classList.add('hidden');
       this._prevIds = new Set();
       this._prevCount = 0;
       return;
@@ -96,6 +98,9 @@ export class SelectionBar {
 
     if (alertEl) {
       alertEl.classList.toggle('hidden', conflictIds.size === 0);
+    }
+    if (duplicateEl) {
+      duplicateEl.classList.toggle('hidden', duplicateIds.size === 0);
     }
 
     // バーが既に出ている状態で新しく加わったチップだけを登場アニメーションさせる

@@ -71,6 +71,11 @@
       <label>公開時のパス</label>
       <input type="text" id="floor-path" placeholder="./venue/3f.png" size="18">
     </div>
+    <div class="ve-row">
+      <label><input type="checkbox" id="floor-outdoor"> 建物の外の地図</label>
+      <label>1px＝<input type="number" id="floor-mpp" step="0.001" min="0" placeholder="0.03" style="width:72px">m</label>
+    </div>
+    <p class="ve-note">縮尺（1px が何 m か）を<strong>すべての階</strong>に入れると、距離をメートルで数え、建物の外を通るときに「徒歩約N分」が出ます。周辺地図の作り方は docs/OUTDOOR_ROUTE.md。</p>
 
     <h2>3. 置く・つなぐ</h2>
     <div class="ve-modes" id="modes">
@@ -85,10 +90,16 @@
       <label>部屋</label><select id="room-pick"></select>
     </div>
     <div class="ve-row">
-      <label>階段・EV の名前</label><input type="text" id="stair-name" value="東階段" size="10">
-      <select id="stair-kind"><option value="stairs">階段</option><option value="elevator">エレベーター</option></select>
+      <label>目印メモ（任意）</label><input type="text" id="room-note" placeholder="西側の通り沿い・2階" size="16">
     </div>
-    <p class="ve-note">同じ名前の階段・EV は、上下の階どうしで自動的につながります。</p>
+    <div class="ve-row">
+      <label>階段・EV・出入口の名前</label><input type="text" id="stair-name" value="東階段" size="10">
+      <select id="stair-kind"><option value="stairs">階段</option><option value="elevator">エレベーター</option><option value="entrance">建物の出入口</option></select>
+    </div>
+    <div class="ve-row">
+      <label>つなぐキー（任意）</label><input type="text" id="stair-link" placeholder="main-entrance" size="14">
+    </div>
+    <p class="ve-note">同じ名前の階段・EV は、上下の階どうしで自動的につながります。<br>名前が階ごとに違うとき（例：屋内は「正面入口」、周辺地図は「本館 正面入口」）は、同じ「つなぐキー」を入れるとつながります。</p>
 
     <h2>4. 部屋の配置状況</h2>
     <ul class="ve-rooms" id="room-status"></ul>
@@ -121,7 +132,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 const HINTS = {
   room: '部屋の入口をクリックすると、左で選んだ部屋として置きます（ピンは入口のすぐ内側が見やすい）。',
   path: '廊下の曲がり角・分かれ道をクリックして点を置きます。',
-  stairs: '階段・エレベーターの位置をクリック。同じ名前なら上下の階が自動でつながります。',
+  stairs: '階段・エレベーター・建物の出入口の位置をクリック。同じ名前（または同じつなぐキー）なら上下の階・建物の外とつながります。',
   link: '点を 2 つ順にクリックすると、通路としてつながります。',
   move: '点をドラッグして動かします。',
   delete: '点か通路をクリックすると消します。',
@@ -183,6 +194,14 @@ $('floor-img').onchange = (e) => {
   img.src = url;
 };
 $('floor-path').onchange = () => { const f = curFloor(); if (f) { f.image = $('floor-path').value.trim(); renderJson(); } };
+$('floor-outdoor').onchange = () => { const f = curFloor(); if (f) { if ($('floor-outdoor').checked) f.outdoor = true; else delete f.outdoor; renderJson(); } };
+$('floor-mpp').onchange = () => {
+  const f = curFloor();
+  if (!f) return;
+  const v = Number($('floor-mpp').value);
+  if (v > 0) f.metersPerPx = v; else delete f.metersPerPx;
+  renderJson();
+};
 const curFloor = () => st.map.floors.find((f) => f.id === st.floorId);
 
 /* ---------- モード ---------- */
@@ -207,10 +226,14 @@ function addNode(p) {
     const room = $('room-pick').value;
     if (!room) return alert('左の「部屋」で部屋名を選んでください');
     n.room = room;
+    const note = $('room-note').value.trim();
+    if (note) n.note = note;
   }
   if (st.mode === 'stairs') {
     n.kind = $('stair-kind').value;
-    n.name = $('stair-name').value.trim() || (n.kind === 'elevator' ? 'エレベーター' : '階段');
+    n.name = $('stair-name').value.trim() || (n.kind === 'elevator' ? 'エレベーター' : n.kind === 'entrance' ? '出入口' : '階段');
+    const link = $('stair-link').value.trim();
+    if (link) n.link = link;
   }
   st.map.nodes.push(n);
   // 直前に選んでいた点とつなぐ（廊下を続けて置きやすくする）
@@ -219,17 +242,19 @@ function addNode(p) {
 }
 function edgeKey(e) { const [a, b] = Array.isArray(e) ? e : [e.a, e.b]; return [a, b].sort().join('|'); }
 
-/* ---------- 書き出し（同名の階段・EV を上下の階でつなぐ） ---------- */
+/* ---------- 書き出し（同名の階段・EV・出入口を上下の階でつなぐ。つなぐキー（link）がある点は VenueRouter がつなぐ） ---------- */
 function exportMap() {
   const edges = st.map.edges.filter((e) => Array.isArray(e) || !e.auto);
   const seen = new Set(edges.map(edgeKey));
   const order = st.map.floors.map((f) => f.id);
   const byName = {};
-  st.map.nodes.filter((n) => n.kind === 'stairs' || n.kind === 'elevator').forEach((n) => (byName[`${n.kind}:${n.name}`] ||= []).push(n));
+  const metric = st.map.floors.length > 0 && st.map.floors.every((f) => Number(f.metersPerPx) > 0);
+  st.map.nodes.filter((n) => !n.link && ['stairs', 'elevator', 'entrance'].includes(n.kind)).forEach((n) => (byName[`${n.kind}:${n.name}`] ||= []).push(n));
   for (const list of Object.values(byName)) {
     list.sort((a, b) => order.indexOf(a.floor) - order.indexOf(b.floor));
     for (let i = 1; i < list.length; i++) {
-      const e = { a: list[i - 1].id, b: list[i].id, weight: list[i].kind === 'elevator' ? 300 : 400 };
+      // 縮尺のある地図は VenueRouter の既定（メートル）に任せる
+      const e = metric ? { a: list[i - 1].id, b: list[i].id } : { a: list[i - 1].id, b: list[i].id, weight: list[i].kind === 'elevator' ? 300 : 400 };
       if (!seen.has(edgeKey(e))) { edges.push(e); seen.add(edgeKey(e)); }
     }
   }
@@ -272,7 +297,19 @@ function renderSide() {
   if (keepTo) $('try-to').value = keepTo; else if ($('try-to').options.length > 1) $('try-to').selectedIndex = 1;
   const f = curFloor();
   $('floor-path').value = f ? f.image || '' : '';
-  $('hint').textContent = f ? `${f.label}：${HINTS[st.mode]}` : '「サンプル会館を開く」か、階を追加して画像を読み込んでください。';
+  $('floor-outdoor').checked = Boolean(f && f.outdoor);
+  $('floor-mpp').value = f && f.metersPerPx ? f.metersPerPx : '';
+  $('hint').textContent = f ? `${f.label}：${HINTS[st.mode]}${geoText(f)}` : '「サンプル会館を開く」か、階を追加して画像を読み込んでください。';
+}
+
+/** 周辺地図（geo のある階）で選んだ点の緯度経度。別館の入口などを直すとき、生成スクリプトの設定に書き写す */
+function geoText(f) {
+  const n = st.sel && st.map.nodes.find((x) => x.id === st.sel);
+  if (!f || !f.geo || !n || n.floor !== f.id) return '';
+  const g = f.geo;
+  const lat = g.lat0 - (n.y * g.mpp + g.y0) / g.ky;
+  const lon = g.lon0 + (n.x * g.mpp + g.x0) / g.kx;
+  return ` ／ 選んだ点「${n.room || n.name || n.id}」の緯度経度：${lat.toFixed(7)}, ${lon.toFixed(7)}`;
 }
 
 function render() {
@@ -307,7 +344,7 @@ function render() {
   nodes.forEach((n) => {
     const g = document.createElementNS(SVG_NS, 'g');
     g.dataset.node = n.id;
-    const kind = n.room ? 'room' : (n.kind === 'stairs' || n.kind === 'elevator') ? 'stairs' : 'path';
+    const kind = n.room ? 'room' : ['stairs', 'elevator', 'entrance'].includes(n.kind) ? 'stairs' : 'path';
     const shape = document.createElementNS(SVG_NS, kind === 'stairs' ? 'rect' : 'circle');
     if (kind === 'stairs') Object.entries({ x: n.x - 12, y: n.y - 12, width: 24, height: 24, rx: 4 }).forEach(([k, v]) => shape.setAttribute(k, v));
     else Object.entries({ cx: n.x, cy: n.y, r: kind === 'room' ? 13 : 8 }).forEach(([k, v]) => shape.setAttribute(k, v));
@@ -364,7 +401,12 @@ function render() {
       if (l.dataset.b === drag.id) { l.setAttribute('x2', drag.x); l.setAttribute('y2', drag.y); }
     });
   };
-  svg.onpointerup = () => { if (drag) { drag = null; renderJson(); } };
+  svg.onpointerup = () => {
+    if (!drag) return;
+    st.sel = drag.id;  // 動かした点を選んだ状態にして、緯度経度を出す
+    drag = null;
+    render();
+  };
 }
 
 window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { st.sel = null; render(); } });

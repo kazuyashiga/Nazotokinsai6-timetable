@@ -7,13 +7,15 @@ import { closeTopLayer } from './motion.js';
  * ※ 表示サイズ切替UIは設けない（標準サイズ一本化）
  */
 export class FilterModal {
-  constructor({ onFilterChange, onExcludeChange }) {
+  constructor({ onFilterChange, onExcludeChange, isTitlePicked }) {
     this.onFilterChange = onFilterChange;
     this.onExcludeChange = onExcludeChange;
+    this.isTitlePicked = isTitlePicked || (() => false);
     this.shows = [];
     this.filterTargetDiff = 'ALL';
     this.filterDiffOp = 'GTE';
     this.currentDiffVal = 3;
+    this.showSelectedOnly = false;
     this.selectedFilterTags = new Set();
     this.excludedTitles = new Set();
     this.allExtractedTags = [];
@@ -26,6 +28,11 @@ export class FilterModal {
     document.getElementById('filter-close-btn')?.addEventListener('click', () => this.close());
     document.getElementById('filter-apply-btn')?.addEventListener('click', () => this.close());
     document.getElementById('filter-reset-btn')?.addEventListener('click', () => this.reset());
+
+    document.getElementById('filter-selected-only')?.addEventListener('change', (e) => {
+      this.showSelectedOnly = Boolean(e.target.checked);
+      this._emitFilterChange();
+    });
 
     document.getElementById('diff-all-btn')?.addEventListener('click', () => {
       this.filterTargetDiff = 'ALL';
@@ -109,6 +116,8 @@ export class FilterModal {
     this._renderTags();
     this._renderExcludeList();
     this._updateDiffUI();
+    const selectedOnly = document.getElementById('filter-selected-only');
+    if (selectedOnly) selectedOnly.checked = this.showSelectedOnly;
     const dialog = document.getElementById('filter-dialog');
     if (dialog && typeof dialog.showModal === 'function') {
       dialog.showModal();
@@ -204,10 +213,12 @@ export class FilterModal {
 
   /** 難易度かタグで絞り込んでいるか（参加済みの非表示は含めない） */
   hasMatchFilter() {
-    return this.filterTargetDiff !== 'ALL' || this.selectedFilterTags.size > 0;
+    return this.filterTargetDiff !== 'ALL' || this.selectedFilterTags.size > 0 || this.showSelectedOnly;
   }
 
   doesShowMatchFilter(show) {
+    if (this.showSelectedOnly && !this.isTitlePicked(show && show.title)) return false;
+
     if (this.filterTargetDiff !== 'ALL') {
       const targetNum = parseInt(this.filterTargetDiff, 10);
       const showDiffNum = show.difficulty && show.difficulty.isNumeric ? show.difficulty.value : NaN;
@@ -231,8 +242,11 @@ export class FilterModal {
     this.filterTargetDiff = 'ALL';
     this.currentDiffVal = 3;
     this.filterDiffOp = 'GTE';
+    this.showSelectedOnly = false;
     this.selectedFilterTags.clear();
     this.excludedTitles.clear();
+    const selectedOnly = document.getElementById('filter-selected-only');
+    if (selectedOnly) selectedOnly.checked = false;
     this._updateDiffUI();
     this._renderTags();
     this._renderExcludeList();
@@ -245,7 +259,8 @@ export class FilterModal {
     const hasActive =
       this.filterTargetDiff !== 'ALL' ||
       this.selectedFilterTags.size > 0 ||
-      this.excludedTitles.size > 0;
+      this.excludedTitles.size > 0 ||
+      this.showSelectedOnly;
     document.getElementById('tools-open-btn')?.classList.toggle('has-active', hasActive);
   }
 

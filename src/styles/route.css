@@ -72,6 +72,22 @@
   letter-spacing: 0.08em;
   color: var(--fes-main);
 }
+/* 建物の外を通るときの目安：徒歩約N分 */
+.rv-walk {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: auto;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--fes-ink);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.rv-walk[hidden] { display: none; }
 .rv-legline {
   display: flex;
   align-items: center;
@@ -435,6 +451,24 @@
   bottom: 12px;
   z-index: 5;
 }
+/* 地図の出典（屋外の地図など）：拡大しても常に見える */
+.rv-credit {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  z-index: 5;
+  margin: 0;
+  max-width: calc(100% - 140px);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.82);
+  color: #4b4e5c;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  pointer-events: none;
+}
+.rv-credit[hidden] { display: none; }
 
 /* ---------- 下部：案内文とナビ ---------- */
 .rv-foot {
@@ -620,6 +654,20 @@
   color: #fff;
   font-size: 10px;
   line-height: 16px;
+}
+.move-strip-text .move-walk {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--fes-main);
+  color: var(--fes-main-ink);
+  font-size: 11px;
+  line-height: 18px;
+  white-space: nowrap;
+  vertical-align: 1px;
 }
 .move-strip-btn {
   flex: none;

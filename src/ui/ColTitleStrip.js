@@ -4,11 +4,12 @@
  * 表の列（#timetable-grid）が描き直されたら、自動で作り直す。
  */
 export class ColTitleStrip {
-  constructor({ nav, scroller, grid, section }) {
+  constructor({ nav, scroller, grid, section, onToggleTitle }) {
     this.nav = nav;
     this.scroller = scroller;
     this.grid = grid;
     this.section = section;
+    this.onToggleTitle = onToggleTitle;
     this.raf = 0;
 
     this.el = document.createElement('div');
@@ -19,6 +20,11 @@ export class ColTitleStrip {
     this.trackEl = this.el.querySelector('.cts-track');
     this.axisEl = this.el.querySelector('.cts-axis');
     nav.append(this.el);
+    this.trackEl.addEventListener('click', (e) => {
+      const cell = e.target.closest('.cts-cell');
+      const title = cell && cell.getAttribute('data-show-title');
+      if (title && this.onToggleTitle) this.onToggleTitle(title);
+    });
 
     const schedule = () => {
       if (this.raf) return;
@@ -37,10 +43,15 @@ export class ColTitleStrip {
     this.axisEl.style.width = `${axisW}px`;
     const cells = [...this.grid.querySelectorAll('.venue-col')].map((col) => {
       const t = col.querySelector('.show-title');
-      const cell = document.createElement('div');
-      cell.className = `cts-cell${t && t.classList.contains('mystic-text') ? ' mystic-text' : ''}`;
+      const btn = col.querySelector('.show-title-btn');
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      const picked = btn && btn.classList.contains('is-picked');
+      cell.className = `cts-cell${t && t.classList.contains('mystic-text') ? ' mystic-text' : ''}${picked ? ' is-picked' : ''}`;
       cell.style.width = `${col.offsetWidth}px`;
       cell.textContent = t ? t.textContent.trim() : '';
+      if (btn) cell.setAttribute('data-show-title', btn.getAttribute('data-show-title') || '');
+      cell.setAttribute('aria-pressed', picked ? 'true' : 'false');
       return cell;
     });
     const spacer = document.createElement('div');

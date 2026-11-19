@@ -41,6 +41,7 @@ export class MyScheduleDialog {
     this.allShows = [];
     this.selectedIds = [];
     this.conflictIds = new Set();
+    this.duplicateIds = new Set();
     this.activeDay = 1;
     this.unlockedShows = new Set();
     this.unlockedUrls = {};
@@ -188,6 +189,7 @@ export class MyScheduleDialog {
     allShows,
     selectedIds,
     conflictIds,
+    duplicateIds,
     activeDay,
     unlockedShows,
     unlockedUrls,
@@ -200,6 +202,7 @@ export class MyScheduleDialog {
     if (allShows !== undefined) this.allShows = allShows || [];
     if (selectedIds !== undefined) this.selectedIds = Array.isArray(selectedIds) ? selectedIds : Array.from(selectedIds || []);
     if (conflictIds !== undefined) this.conflictIds = conflictIds || new Set();
+    if (duplicateIds !== undefined) this.duplicateIds = duplicateIds || new Set();
     if (activeDay !== undefined) this.activeDay = this._parseDayNum(activeDay);
     if (unlockedShows !== undefined) this.unlockedShows = unlockedShows || new Set();
     if (unlockedUrls !== undefined) this.unlockedUrls = unlockedUrls || {};
@@ -328,6 +331,7 @@ export class MyScheduleDialog {
       if (backBtn) backBtn.classList.remove('hidden');
       if (headingText) headingText.textContent = 'My ハシゴテーブル';
       if (conflictBanner) conflictBanner.classList.add('hidden');
+      document.getElementById('schedule-duplicate-banner')?.classList.add('hidden');
       if (panelTimeline) panelTimeline.classList.add('hidden');
       if (panelPass) panelPass.classList.remove('hidden');
       if (footerList) footerList.classList.add('hidden');
@@ -347,10 +351,12 @@ export class MyScheduleDialog {
 
     const selectedDayShows = this._getSelectedDayShows();
     const dayConflicts = selectedDayShows.some(s => this.conflictIds.has(s.id));
+    const dayDuplicates = selectedDayShows.some(s => this.duplicateIds.has(s.id));
 
     if (conflictBanner) {
       conflictBanner.classList.toggle('hidden', !dayConflicts);
     }
+    document.getElementById('schedule-duplicate-banner')?.classList.toggle('hidden', !dayDuplicates);
 
     if (findGapsLabel) {
       findGapsLabel.textContent = this.gapFinderActive
@@ -494,20 +500,30 @@ export class MyScheduleDialog {
     return ConflictDetector.isFlexibleShow(show) ? `随時 ${show.title}` : `${show.startTime} ${show.title}`;
   }
 
-  /** 移動の帯（所要分や判定は出さない。出すのは「どこからどこへ」と「ルートを見る」だけ） */
+  /** 移動の帯（判定は出さない。出すのは「どこからどこへ」「ルートを見る」と、建物の外を通るときの目安の徒歩の時間） */
   _renderMoveStrip(prev, next) {
     const router = this.venueRouter;
     if (!router || !prev || !next) return '';
     const route = router.route(prev.room, next.room);
     if (!route) return '';
-    const floorOf = (seg) => (router.floors.length > 1 ? `<span class="move-floor">${Parser.escapeHtml(seg.floor.label)}</span>` : '');
+    // 周辺地図（屋外）の上の部屋（別館など）には階の名前を付けない
+    const floorOf = (seg) => (router.floors.length > 1 && !seg.floor.outdoor ? `<span class="move-floor">${Parser.escapeHtml(seg.floor.label)}</span>` : '');
     const first = route.segments[0];
     const last = route.segments[route.segments.length - 1];
-    const via = route.segments.length > 1 ? `（${Parser.escapeHtml(first.exitVia.name)}経由）` : '';
+    // 建物の外へ出るなら、その出入口（「正面入口から外へ」）。外から入るだけなら入る所。屋内だけなら最初の階段
+    const exits = route.segments.map((s) => s.exitVia).filter(Boolean);
+    const outExit = exits.find((v) => v.kind === 'entrance' && v.toFloor.outdoor);
+    const inExit = exits.find((v) => v.kind === 'entrance' && !v.toFloor.outdoor);
+    let via = '';
+    // エレベーターで降りて 1 階の出入口から出るときは、出入口の名前（through）を書く
+    if (outExit) via = `（${Parser.escapeHtml(outExit.through || outExit.name)}から外へ）`;
+    else if (inExit) via = `（${Parser.escapeHtml(inExit.name)}から）`;
+    else if (exits.length) via = `（${Parser.escapeHtml(exits[0].name)}経由）`;
+    const walk = route.walk ? `<span class="move-walk">徒歩約${route.walk.minutes}分</span>` : '';
     return `
       <div class="move-strip" role="group" aria-label="${Parser.escapeHtml(route.from)}から${Parser.escapeHtml(route.to)}への移動">
         <span class="move-strip-icon">${ROUTE_SVG}</span>
-        <span class="move-strip-text">${floorOf(first)}<b>${Parser.escapeHtml(route.from)}</b> から ${floorOf(last)}<b>${Parser.escapeHtml(route.to)}</b> へ${via}</span>
+        <span class="move-strip-text">${floorOf(first)}<b>${Parser.escapeHtml(route.from)}</b> から ${floorOf(last)}<b>${Parser.escapeHtml(route.to)}</b> へ${via}${walk}</span>
         <button type="button" class="move-strip-btn"
           data-route-from="${Parser.escapeHtml(prev.room)}"
           data-route-to="${Parser.escapeHtml(next.room)}"

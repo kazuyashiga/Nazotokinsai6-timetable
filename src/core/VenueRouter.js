@@ -1,8 +1,9 @@
 /**
- * 会場マップ（venue_map.json）から、部屋から部屋への屋内ルートを求める。
+ * 会場マップ（venue_map.json）から、部屋から部屋へのルートを求める（屋内の階と、建物の外の周辺地図）。
  *
  * 判定には使わない：重なり警告・スキマ提案は主催者の設定（0分移動OK／前後5分）のまま。
- * ここで扱うのは「どこをどう通るか」だけで、所要分は出さない。
+ * ここで扱うのは「どこをどう通るか」と、建物の外を歩くときの目安の時間（徒歩約N分）だけ。
+ * 仕様：docs/OUTDOOR_ROUTE.md
  *
  * venue_map.json の形:
  * {
@@ -11,11 +12,22 @@
  *              { "id": "st-e1", "floor": "1F", "x": 980, "y": 160, "kind": "stairs", "name": "東階段" }],
  *   "edges":  [["r-main", "c1"], { "a": "st-e1", "b": "st-e2", "weight": 400 }]
  * }
- * - 同じ階の通路の重みは 2 点間の距離（px）。階をまたぐ通路（階段・エレベーター）は weight（既定 400）。
+ * - 同じ階の通路の重みは 2 点間の距離。すべての階に metersPerPx があればメートル、無ければ px。
+ * - 階をまたぐ通路の重みは weight。省略時はメートルなら階段 15・エレベーター 30・出入口 5、px なら 400。
+ * - 階の追加の設定：outdoor（建物の外の周辺地図）・metersPerPx・footprint（周辺地図上の建物の位置。画面の切り替えに使う）。
+ * - 点の追加の設定：kind "entrance"（建物の出入口）・link（同じ値の点を隣り合う階どうしでつなぐ）・note（到着の目印）。
  * - 部屋の名前は公演データの「会場(部屋)」と結び付ける（全角半角・空白の違いは吸収する）。
  */
 
 const DEFAULT_VERTICAL_WEIGHT = 400;
+/** 階をまたぐときの、歩く距離に換算した長さ（メートル） */
+const CROSS_METERS = { stairs: 15, elevator: 30, entrance: 5 };
+/** 徒歩の速さ（分速）。不動産の表示で使われる基準 */
+export const WALK_METERS_PER_MIN = 80;
+
+/** 階をまたぐ所の種類。片方が建物の出入口なら出入口（例：エレベーターで 1 階へ降りて出入口から外へ）、ほかは先に見つかった種類 */
+const crossKind = (na, nb) => (na.kind === 'entrance' || nb.kind === 'entrance' ? 'entrance' : [na.kind, nb.kind].find((k) => k && k !== 'path') || 'stairs');
+const isVia = (k) => k && k !== 'path';
 
 /** 部屋名の表記ゆれを吸収する（全角英数・空白・括弧の全半角） */
 export function normalizeRoomName(name) {
@@ -40,6 +52,9 @@ export class VenueRouter {
       image: baseUrl && f.image ? new URL(f.image, baseUrl).href : f.image,
     }));
     this.floorById = new Map(this.floors.map((f) => [f.id, f]));
+    this.floorOrder = new Map(this.floors.map((f, i) => [f.id, i]));
+    // すべての階に縮尺があれば、道の重みをメートルで数える（無ければ今までどおり px）
+    this.metric = this.floors.length > 0 && this.floors.every((f) => Number(f.metersPerPx) > 0);
     this.nodes = new Map();
     for (const n of map.nodes) {
       if (!this.floorById.has(n.floor)) throw new Error(`venue_map: 未定義の階 ${n.floor}（ノード ${n.id}）`);
@@ -48,14 +63,33 @@ export class VenueRouter {
 
     // 隣接リスト
     this.adj = new Map([...this.nodes.keys()].map((id) => [id, []]));
-    for (const e of map.edges || []) {
-      const [a, b, weight] = Array.isArray(e) ? [e[0], e[1], undefined] : [e.a, e.b, e.weight];
+    const linked = new Set();
+    const connect = (a, b, weight) => {
       const na = this.nodes.get(a);
       const nb = this.nodes.get(b);
       if (!na || !nb) throw new Error(`venue_map: 通路の端点がありません ${a} - ${b}`);
-      const w = weight ?? (na.floor === nb.floor ? Math.hypot(na.x - nb.x, na.y - nb.y) : DEFAULT_VERTICAL_WEIGHT);
+      const w = weight ?? (na.floor === nb.floor
+        ? Math.hypot(na.x - nb.x, na.y - nb.y) * (this.metric ? Number(this.floorById.get(na.floor).metersPerPx) : 1)
+        : (this.metric ? CROSS_METERS[crossKind(na, nb)] ?? CROSS_METERS.stairs : DEFAULT_VERTICAL_WEIGHT));
       this.adj.get(a).push({ to: b, w });
       this.adj.get(b).push({ to: a, w });
+      linked.add(`${a}\u0000${b}`).add(`${b}\u0000${a}`);
+    };
+    for (const e of map.edges || []) {
+      if (Array.isArray(e)) connect(e[0], e[1]);
+      else connect(e.a, e.b, e.weight);
+    }
+    // link が同じ点どうしを、階の並びで隣り合うものからつなぐ（edges に書いてあれば足さない）
+    const byLink = new Map();
+    for (const n of this.nodes.values()) {
+      if (n.link) (byLink.get(n.link) || byLink.set(n.link, []).get(n.link)).push(n);
+    }
+    for (const list of byLink.values()) {
+      list.sort((p, q) => this.floorOrder.get(p.floor) - this.floorOrder.get(q.floor));
+      for (let i = 1; i < list.length; i++) {
+        const [p, q] = [list[i - 1], list[i]];
+        if (p.floor !== q.floor && !linked.has(`${p.id}\u0000${q.id}`)) connect(p.id, q.id);
+      }
     }
 
     // 部屋名 → ノード
@@ -129,9 +163,42 @@ export class VenueRouter {
   }
 
   /**
+   * ルートの長さ（メートル）。縮尺の無い階の道は数えない（その階の長さは分からないため）。
+   * 外（outdoor の階）を通るときだけ walk を返す：{ meters, outdoorMeters, minutes }
+   */
+  _walk(ids) {
+    let meters = 0;
+    let outdoorMeters = 0;
+    for (let i = 1; i < ids.length; i++) {
+      const p = this.nodes.get(ids[i - 1]);
+      const q = this.nodes.get(ids[i]);
+      if (p.floor !== q.floor) {
+        // メートルの地図では、edges に書いた重み（例：エレベーターで 1 階へ降りて出入口まで 40m）をそのまま使う
+        const e = this.metric ? this.adj.get(p.id).find((x) => x.to === q.id) : null;
+        meters += e ? e.w : CROSS_METERS[crossKind(p, q)] ?? CROSS_METERS.stairs;
+        continue;
+      }
+      const floor = this.floorById.get(p.floor);
+      const mpp = Number(floor.metersPerPx);
+      if (!(mpp > 0)) continue;
+      const d = Math.hypot(p.x - q.x, p.y - q.y) * mpp;
+      meters += d;
+      if (floor.outdoor) outdoorMeters += d;
+    }
+    if (!(outdoorMeters > 0)) return null;
+    return {
+      meters: Math.round(meters),
+      outdoorMeters: Math.round(outdoorMeters),
+      minutes: Math.max(1, Math.ceil(meters / WALK_METERS_PER_MIN)),
+    };
+  }
+
+  /**
    * 部屋から部屋へのルート。階ごとの区間に分けて返す。
-   * 階をまたぐ所では、出る側の区間に exitVia、入る側の区間に enterVia（同じ階段名・同じ番号）を付ける。
-   * @returns {null | { from: string, to: string, segments: Array<{
+   * 階をまたぐ所では、出る側の区間に exitVia、入る側の区間に enterVia（同じ番号）を付ける。
+   * 名前はそれぞれの側の点の名前（「正面入口」と「本館 正面入口」のように呼び分けられる）。
+   * @returns {null | { from: string, to: string, note: string,
+   *   walk: null | { meters: number, outdoorMeters: number, minutes: number }, segments: Array<{
    *   floor: object, points: Array<{x:number,y:number,id:string}>,
    *   exitVia?: { no: number, name: string, kind: string, x: number, y: number, toFloor: object },
    *   enterVia?: { no: number, name: string, kind: string, x: number, y: number, fromFloor: object } }> }}
@@ -160,10 +227,18 @@ export class VenueRouter {
       no += 1;
       const exitNode = kept[i].nodes[kept[i].nodes.length - 1];
       const enterNode = kept[i + 1].nodes[0];
-      const name = exitNode.name || enterNode.name || (exitNode.kind === 'elevator' ? 'エレベーター' : '階段');
-      segments[i].exitVia = { no, name, kind: exitNode.kind, x: exitNode.x, y: exitNode.y, toFloor: segments[i + 1].floor };
-      segments[i + 1].enterVia = { no, name, kind: enterNode.kind, x: enterNode.x, y: enterNode.y, fromFloor: segments[i].floor };
+      const kind = crossKind(exitNode, enterNode);
+      const fallback = kind === 'elevator' ? 'エレベーター' : kind === 'entrance' ? '出入口' : '階段';
+      const exitName = exitNode.name || enterNode.name || fallback;
+      const enterName = enterNode.name || exitNode.name || fallback;
+      segments[i].exitVia = { no, name: exitName, kind, x: exitNode.x, y: exitNode.y, toFloor: segments[i + 1].floor };
+      segments[i + 1].enterVia = { no, name: enterName, kind, x: enterNode.x, y: enterNode.y, fromFloor: segments[i].floor };
+      // 種類の違う点どうし（エレベーター ⇔ 1 階の出入口など）は、もう一方の名前も渡す（「エレベーターで降り、1階 出入口から外へ」）
+      if (isVia(exitNode.kind) && isVia(enterNode.kind) && exitNode.kind !== enterNode.kind) {
+        segments[i].exitVia.through = enterName;
+        segments[i + 1].enterVia.through = exitName;
+      }
     }
-    return { from: a.room || fromRoom, to: b.room || toRoom, segments };
+    return { from: a.room || fromRoom, to: b.room || toRoom, note: b.note || '', walk: this._walk(ids), segments };
   }
 }

@@ -44,7 +44,5 @@
 <line x1="719" y1="960" x2="808" y2="960" stroke="#2b2e3a" stroke-width="3" opacity=".5"/>
 <text x="763.5" y="876" text-anchor="middle" font-family="'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP','IPAGothic',sans-serif" font-size="30" font-weight="700" fill="#2b2e3a" >南階段</text>
 <text x="48" y="1100" text-anchor="start" font-family="'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP','IPAGothic',sans-serif" font-size="56" font-weight="900" fill="#2b2e3a" opacity=".22">3階</text>
-<rect x="1080" y="1038" width="604" height="64" rx="8" fill="#facc15"/>
-<text x="1382" y="1082" text-anchor="middle" font-family="'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP','IPAGothic',sans-serif" font-size="36" font-weight="900" fill="#2b2e3a" >サンプル（非公式）・簡略図</text>
-<text x="1684" y="64" text-anchor="end" font-family="'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP','IPAGothic',sans-serif" font-size="26" font-weight="700" fill="#8a8d99" >浪速区民センターの公式フロアマップを参考に簡略化</text>
+<text x="1684" y="1100" text-anchor="end" font-family="'Hiragino Sans','Noto Sans JP','Noto Sans CJK JP','IPAGothic',sans-serif" font-size="26" font-weight="700" fill="#9a9db0" >この地図はサンプルです</text>
 </svg>

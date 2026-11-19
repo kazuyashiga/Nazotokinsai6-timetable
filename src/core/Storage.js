@@ -49,6 +49,27 @@ export class Storage {
     }
   }
 
+  static savePickedTitles(eventId, titles) {
+    try {
+      const list = titles instanceof Set ? Array.from(titles) : Array.from(titles || []);
+      localStorage.setItem(this._buildKey('picked_titles_v3', eventId), JSON.stringify(list));
+    } catch (e) {
+      console.warn('Failed to save picked titles:', e);
+    }
+  }
+
+  static loadPickedTitles(eventId) {
+    try {
+      const raw = localStorage.getItem(this._buildKey('picked_titles_v3', eventId));
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('Failed to load picked titles:', e);
+      return [];
+    }
+  }
+
   static loadExcludedTitles(eventId) {
     try {
       const raw = localStorage.getItem(this._buildKey('excluded_v3', eventId));
