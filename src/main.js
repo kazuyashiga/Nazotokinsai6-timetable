@@ -26,7 +26,15 @@ const GAS_API_URL = urlParams.get('api') || (import.meta.env && import.meta.env.
  * ?mock=1 … 架空のサンプル会館、?mock=sample … 屋外の周辺地図つきのサンプル会場、
  * ?mock=sample2 … ビルの 3〜5 階と、駅前の広場までの広めの周辺地図（どれもサンプルの公演）。/sample/・/sample2/ はそれぞれへ転送
  */
-const MOCK_SOURCES = { 1: './mock_data.json', sample: './samples/sample-hall.json', sample2: './samples/sample-hall2.json' };
+/** サイトのルートからのファイル。タイムテーブルが /fes6/time-table/ にあっても data.json を取り違えない */
+function siteUrl(path) {
+  if (!path) return path;
+  if (/^(https?:|data:|blob:)/i.test(path)) return path;
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base}${String(path).replace(/^\.\//, '')}`;
+}
+
+const MOCK_SOURCES = { 1: siteUrl('mock_data.json'), sample: siteUrl('samples/sample-hall.json'), sample2: siteUrl('samples/sample-hall2.json') };
 const MOCK_URL = MOCK_SOURCES[urlParams.get('mock')] || null;
 const FORCE_MOCK = Boolean(MOCK_URL);
 /** 表示用キャッシュの鍵：サンプルは本番と分ける（サンプルを開いた後に本番を開くと、一瞬サンプルが出てしまうため） */
@@ -393,7 +401,7 @@ function applyLoadedData(rawData) {
 
   state.config = config;
   state.allShows = shows;
-  loadVenueMap(config.venueMapUrl, shows);
+  loadVenueMap(config.venueMapUrl ? siteUrl(config.venueMapUrl) : '', shows);
   state.showsMap = new Map(shows.map(s => [s.id, s]));
   state.eventStorageId = EVENT_KEY !== 'default'
     ? EVENT_KEY
@@ -460,7 +468,7 @@ async function fetchLatestRawData() {
   }
 
   try {
-    return await new StaticJsonAdapter('./data.json').fetchData();
+    return await new StaticJsonAdapter(siteUrl('data.json')).fetchData();
   } catch (staticErr) {
     console.warn('StaticJsonAdapter failed, trying fallback:', staticErr);
   }
@@ -473,7 +481,7 @@ async function fetchLatestRawData() {
     }
   }
 
-  return await new MockAdapter('./mock_data.json').fetchData();
+  return await new MockAdapter(siteUrl('mock_data.json')).fetchData();
 }
 
 function bindGlobalUiEvents() {

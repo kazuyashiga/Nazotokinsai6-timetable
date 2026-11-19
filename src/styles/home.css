@@ -1,0 +1,355 @@
+:root {
+  --ink: #141414;
+  --paper: #f4f1ea;
+  --teal: #00a99a;
+  --yellow: #ffe500;
+  --line: rgba(20, 20, 20, 0.16);
+  --header: 92px;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 1.125rem;
+  line-height: 1.7;
+}
+
+img { max-width: 100%; display: block; }
+
+a { color: inherit; }
+
+.skip {
+  position: absolute;
+  left: 16px;
+  top: -40px;
+  background: #fff;
+  padding: 8px 12px;
+  z-index: 10;
+}
+
+.skip:focus { top: 12px; }
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: var(--header);
+  padding: 12px 4vw;
+  background: rgba(244, 241, 234, 0.94);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: inherit;
+  text-decoration: none;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+}
+
+.brand img {
+  height: 64px;
+  width: auto;
+  background: #000;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 22px;
+  font-weight: 700;
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+}
+
+.site-nav a {
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  border-bottom-color: var(--yellow);
+}
+
+.hero {
+  padding: 8vh 4vw 6vh;
+}
+
+.hero-kicker {
+  margin: 0 0 18px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  font-size: 0.86rem;
+}
+
+.hero h1 {
+  margin: 0;
+  max-width: 16em;
+  font-family: "Dela Gothic One", "Zen Kaku Gothic New", sans-serif;
+  font-weight: 400;
+  font-size: clamp(2.4rem, 6.4vw, 5.6rem);
+  line-height: 1.18;
+  letter-spacing: 0.01em;
+}
+
+.hero h1 span {
+  display: block;
+}
+
+.hero h1 span:first-child {
+  display: inline;
+  background: var(--teal);
+  color: #fff;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 0.12em 0.04em;
+}
+
+.motive {
+  margin: 40px 0 0;
+  max-width: 14em;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  line-height: 1.45;
+}
+
+.invite {
+  margin: 0;
+  padding: 22px 4vw;
+  background: var(--yellow);
+  color: #111;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(1.25rem, 2.4vw, 2rem);
+  line-height: 1.4;
+}
+
+.events {
+  padding: 8vh 0 2vh;
+}
+
+.events-head,
+.fes,
+.contact {
+  padding-left: 4vw;
+  padding-right: 4vw;
+}
+
+.section-index {
+  margin: 0 0 8px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  color: var(--teal);
+}
+
+.events-head h2,
+.fes h2,
+.contact h2 {
+  margin: 0 0 28px;
+  font-family: "Dela Gothic One", sans-serif;
+  font-weight: 400;
+  font-size: clamp(1.8rem, 4vw, 3.4rem);
+  line-height: 1.25;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) 1.1fr;
+  gap: 0;
+  border-top: 1px solid var(--line);
+}
+
+.event figure {
+  margin: 0;
+  background: #111;
+  min-height: 320px;
+}
+
+.event img {
+  width: 100%;
+  height: 100%;
+  max-height: 760px;
+  object-fit: cover;
+}
+
+.event-body {
+  padding: 6vh 4vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.event-flip figure { order: 2; }
+
+.event-label {
+  margin: 0 0 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  font-size: 0.82rem;
+}
+
+.event h3 {
+  margin: 0 0 18px;
+  font-family: "Dela Gothic One", sans-serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 4.4vw, 4.2rem);
+  line-height: 1.15;
+}
+
+.event-lead {
+  margin-top: 0;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+}
+
+.facts span {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  font-weight: 900;
+  color: var(--teal);
+}
+
+.fes {
+  margin-top: 4vh;
+  padding-top: 8vh;
+  padding-bottom: 8vh;
+  background: #111;
+  color: #fff;
+}
+
+.fes-date {
+  margin: 0;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: clamp(2.6rem, 7vw, 6.4rem);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.fes-date span {
+  margin-left: 0.12em;
+  font-size: 0.38em;
+  letter-spacing: 0.08em;
+}
+
+.fes-copy {
+  margin: 22px 0 28px;
+  font-size: 1.2rem;
+}
+
+.fes-link,
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 28px;
+  background: var(--yellow);
+  color: #111;
+  font-family: "Dela Gothic One", sans-serif;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+
+.fes-link:hover,
+.fes-link:focus-visible,
+.contact-link:hover,
+.contact-link:focus-visible {
+  background: #fff;
+}
+
+.contact {
+  padding-top: 8vh;
+  padding-bottom: 6vh;
+  max-width: 920px;
+}
+
+.contact p {
+  max-width: 38em;
+}
+
+.contact-lead {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.contact-link {
+  margin-top: 12px;
+  background: var(--teal);
+  color: #fff;
+}
+
+.contact-link:hover,
+.contact-link:focus-visible {
+  background: #111;
+  color: #fff;
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  justify-content: space-between;
+  padding: 28px 4vw 40px;
+  border-top: 1px solid var(--line);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--teal);
+}
+
+@media (max-width: 860px) {
+  :root { --header: auto; }
+
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .brand img { height: 56px; }
+
+  .event,
+  .event-flip {
+    grid-template-columns: 1fr;
+  }
+
+  .event-flip figure { order: 0; }
+
+  .event img { max-height: 460px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
