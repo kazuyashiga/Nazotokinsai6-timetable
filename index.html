@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>つくるえぐぜ | tsukuru-exe</title>
-  <meta name="description" content="ひろしま謎解きん祭6のタイムテーブルと、広島の謎解きチーム つくるえぐぜ。">
+  <meta name="description" content="広島の謎解き制作サークル、つくるえぐぜ。ひろしま謎解きん祭6は2027年1月16日・17日。">
   <link rel="icon" href="/home/logo-mark.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,139 +19,167 @@
       <img src="/home/logo-mark.png" alt="つくるえぐぜ">
     </a>
     <nav class="site-nav" aria-label="主なページ">
-      <a href="#fes">謎解きん祭</a>
-      <a href="/fes6/time-table/">タイムテーブル</a>
-      <a href="#works">制作</a>
-      <a href="#contact">お問い合わせ</a>
+      <a href="#about">ABOUT</a>
+      <a href="#contents">CONTENTS</a>
+      <a href="#festival">FESTIVAL</a>
+      <a href="#contact">CONTACT</a>
     </nav>
   </header>
 
   <main id="main">
-    <section class="fes hero reveal" id="fes" aria-labelledby="fes-title">
-      <p class="hero-kicker">2027.1.16 土 — 1.17 日</p>
-      <h1 id="fes-title">ひろしま謎解きん祭6</h1>
-      <p class="fes-note">当日のハシゴは、タイムテーブルで組み立てられます。</p>
-      <a class="fes-link" href="/fes6/time-table/">タイムテーブルを開く</a>
+    <section class="about reveal" id="about" aria-labelledby="about-title">
+      <h2 id="about-title">ABOUT</h2>
+      <img class="about-logo" src="/home/logo-mark.png" alt="">
+      <p>広島の謎解き制作サークル「つくるえぐぜ」です。</p>
+      <p>「作ったものを世の中に展開する」というのが団体名の由来。</p>
     </section>
 
-    <section class="about reveal" aria-labelledby="about-title">
-      <p class="hero-kicker">広島を拠点に活動中</p>
-      <h2 id="about-title">つくるえぐぜ</h2>
-      <p>謎解きゲームをメインに、様々な創作活動をする社会人チームです。</p>
-      <p class="motive">もっと広島を盛り上げたい！って気持ちをモチベーションに成り立ってます。</p>
-    </section>
-
-    <section class="events reveal" id="events" aria-labelledby="events-title">
-      <div class="events-head">
-        <h2 id="events-title">直近で開催したイベント</h2>
+    <section class="contents reveal" id="contents" aria-labelledby="contents-title">
+      <h2 id="contents-title">CONTENTS</h2>
+      <p class="section-note">最近のイベントと、これまでの制作です。画像を押すと詳細が開きます。</p>
+      <div class="rail" tabindex="0" aria-label="制作とイベント">
+        <button type="button" class="card" data-detail="shortcut">
+          <img src="/home/shortcut.jpg" alt="ショートカットサーキット">
+        </button>
+        <button type="button" class="card" data-detail="mojimoji">
+          <img src="/home/mojimoji.jpg" alt="もじもじミックス">
+        </button>
+        <button type="button" class="card" data-detail="master">
+          <img src="/home/works/master.jpg" alt="一日マスター">
+        </button>
+        <button type="button" class="card" data-detail="zoo">
+          <img src="/home/works/zoo.jpg" alt="なぞとき動物園のかくれんぼ">
+        </button>
+        <button type="button" class="card" data-detail="train">
+          <img src="/home/works/train.jpg" alt="盗まれた黄金模型とおしゃべりな車両たち">
+        </button>
+        <button type="button" class="card" data-detail="asu2021">
+          <img src="/home/works/asu2021.jpg" alt="アス謎2021">
+        </button>
+        <button type="button" class="card" data-detail="phantom">
+          <img src="/home/works/phantom.jpg" alt="怪盗X団の入団試験">
+        </button>
+        <button type="button" class="card" data-detail="asu">
+          <img src="/home/works/asu.jpg" alt="アス謎">
+        </button>
+        <button type="button" class="card" data-detail="werewolf">
+          <img src="/home/works/werewolf.jpg" alt="リアル人狼ゲームからの脱出">
+        </button>
       </div>
 
-      <article class="event">
-        <figure>
-          <img src="/home/shortcut.jpg" alt="ショートカットサーキットのポスター。赤い車と、最短ルートを駆け抜けろ、という文字。">
-        </figure>
-        <div class="event-body">
-          <p class="event-label">タイムアタック</p>
+      <div class="details">
+        <article id="shortcut" hidden>
           <h3>ショートカットサーキット</h3>
-          <p class="event-lead">全ての謎に隠された＜ショートカット＞を見つけ出せ！ひらめきで短縮ルートを通り、より早いタイムでのクリアを目指そう！</p>
+          <p>全ての謎に隠された＜ショートカット＞を見つけ出せ。ひらめきで短縮ルートを通り、より早いタイムでのクリアを目指そう。</p>
           <p>謎を解きクリアタイムを競うタイムアタック形式の謎解きイベントです。最大4人1チームとなりゲームクリアを目指していただきます。</p>
-          <ul class="facts">
-            <li><span>人数</span>1〜4人</li>
-            <li><span>時間</span>50分（30分＋説明・解説20分）</li>
-          </ul>
-        </div>
-      </article>
-
-      <article class="event">
-        <figure>
-          <img src="/home/mojimoji.jpg" alt="もじもじミックスのポスター。ミキサーの中に文字パネルが飛び込んでいる。">
-        </figure>
-        <div class="event-body">
-          <p class="event-label">共同制作 ニレイロ企画</p>
+          <p>人数 1〜4人 ／ 時間 50分（30分＋説明・解説20分）</p>
+        </article>
+        <article id="mojimoji" hidden>
           <h3>もじもじミックス</h3>
-          <p class="event-lead">Easyの部屋とHardの部屋、二手に分かれて謎解きゲームをしていただきます。</p>
-          <p>うまくコミュニケーションをとりながら、クリアを目指してください！</p>
-          <ul class="facts">
-            <li><span>人数</span>2〜4人</li>
-            <li><span>時間</span>60分＋説明25分</li>
-          </ul>
-        </div>
-      </article>
+          <p>Easyの部屋とHardの部屋、二手に分かれて謎解きゲームをしていただきます。うまくコミュニケーションをとりながら、クリアを目指してください。</p>
+          <p>人数 2〜4人 ／ 時間 60分＋説明25分 ／ 共同制作 ニレイロ企画</p>
+        </article>
+        <article id="master" hidden>
+          <h3>一日マスター</h3>
+          <p>突然BARのマスターを任されることになったあなた。BARに仕掛けられた謎を解き、一日マスターを乗り切ろう。本物のBARでマスター体験ができる謎解きです。</p>
+          <p>人数 2〜4人 ／ 時間 60分程度</p>
+        </article>
+        <article id="zoo" hidden>
+          <h3>なぞとき動物園のかくれんぼ</h3>
+          <p>ここは謎解きが好きな動物が集まる場所、『なぞとき動物園』。今動物たちの間では『かくれんぼ』が大流行。園内では動物たちの捜索に飼育員たちは大慌て。ここの動物たちは、謎を解かない限り自分の持ち場に帰ってくれません。あなたの謎解き力で動物たちを手懐けていきましょう。</p>
+          <p>開催日 2022年7月23日 ／ 人数 1人から</p>
+        </article>
+        <article id="train" hidden>
+          <h3>盗まれた黄金模型とおしゃべりな車両たち</h3>
+          <p>謎制作担当として携わった作品です。実際に路面電車に乗って広島市内各地を巡り、謎を解き明かして物語を進める周遊型謎解きゲームです。広島電鉄で保管されていた秘宝「黄金の電車模型」が盗まれ、怪盗M０を追う臨時捜査員になります。</p>
+          <p>2022年3月25日〜7月31日 ／ 人数 1人から ／ 主催 広島電鉄株式会社</p>
+        </article>
+        <article id="asu2021" hidden>
+          <h3>アス謎2021</h3>
+          <p>謎制作担当として携わった作品です。実際にアストラムラインに乗り、駅やその周辺を探索しながら謎を解いていく体験型ゲームイベントです。</p>
+          <p>2021年4月29日〜2022年3月31日 ／ 人数 1人から ／ 主催 広島高速交通株式会社</p>
+        </article>
+        <article id="phantom" hidden>
+          <h3>怪盗X団の入団試験</h3>
+          <p>〜『キャルセドニ美術館』に隠された秘宝〜</p>
+          <p>名高い怪盗団”Ｘ”に入団するため、入団試験を受けにきたあなたたち。ある美術館から、最も高価な美術品を盗み出すことが条件です。</p>
+          <p>人数 1チーム4人まで ／ 時間 90分程度</p>
+        </article>
+        <article id="asu" hidden>
+          <h3>アス謎</h3>
+          <p>アストラムライン開業25周年記念事業。実際にアストラムラインに乗り、駅やその周辺を探索する周遊型の謎解きゲームです。</p>
+          <p>2019年7月20日〜10月27日 ／ 人数 1人から ／ 時間 3〜4時間 ／ 主催 広島高速交通株式会社</p>
+          <p><a href="https://www.asu-nazo.com">https://www.asu-nazo.com</a></p>
+        </article>
+        <article id="werewolf" hidden>
+          <h3>リアル人狼ゲームからの脱出</h3>
+          <p>目が覚めると見知らぬ密室に閉じ込められたあなたたち。「人狼ゲームで勝つか、謎を解かなければ死ぬ」。実際に人狼ゲームを進めながら、プレイヤーが減っていく中でクリアを目指すサスペンス型謎解きゲームです。</p>
+          <p>人数 7〜9人 ／ 時間 120分程度 ／ 1チームのみ。未経験の方には開始前に説明します。</p>
+        </article>
+      </div>
     </section>
 
-    <section class="works reveal" id="works" aria-labelledby="works-title">
-      <h2 id="works-title">過去の事例・制作物</h2>
-
-      <article class="work">
-        <h3>一日マスター</h3>
-        <p>突然BARのマスターを任されることになったあなた。BARに仕掛けられた謎を解き、一日マスターを乗り切ろう！本物のBARでマスター体験ができる謎解きです。</p>
-        <p class="work-meta">人数 2〜4人 ／ 時間 60分程度</p>
-      </article>
-
-      <article class="work">
-        <h3>なぞとき動物園のかくれんぼ</h3>
-        <p>ここは謎解きが好きな動物が集まる場所、『なぞとき動物園』。今動物たちの間では『かくれんぼ』が大流行。園内では動物たちの捜索に飼育員たちは大慌て。園長まで捜索に行っているのですが、なかなか動物たちが見つかりません。ここの動物たちは、謎を解かない限り自分の持ち場に帰ってくれません。そこであなたの出番です。あなたの謎解き力で動物たちを手懐けていきましょう。</p>
-        <p class="work-meta">開催日 2022年7月23日 ／ 人数 1人から</p>
-      </article>
-
-      <article class="work">
-        <h3>盗まれた黄金模型とおしゃべりな車両たち</h3>
-        <p>謎制作担当として携わった作品です。実際に路面電車に乗って広島市内各地を巡り、謎を解き明かして物語を進める周遊型謎解きゲームです。広島電鉄で大切に保管されていた秘宝「黄金の電車模型」が盗まれた。犯人は最近広島の街を騒がせている「怪盗M０（エムゼロ）」。電車車両と話すことができるという特殊な能力を持っているあなたは、広島電鉄内部に秘密裏に設けられた「特別捜査本部」の臨時捜査員となり、様々な謎を解き明かす。怪盗を捕まえて黄金模型のありかを探し出せ。</p>
-        <p class="work-meta">2022年3月25日〜7月31日 ／ 人数 1人から ／ 主催 広島電鉄株式会社</p>
-      </article>
-
-      <article class="work">
-        <h3>アス謎2021</h3>
-        <p>謎制作担当として携わった作品です。あなたが主人公となって実際にアストラムラインに乗り、駅やその周辺を探索しながら謎を解いていく体験型ゲームイベントです。</p>
-        <p class="work-meta">2021年4月29日〜2022年3月31日 ／ 人数 1人から ／ 主催 広島高速交通株式会社</p>
-      </article>
-
-      <article class="work">
-        <h3>怪盗X団の入団試験</h3>
-        <p class="work-sub">〜『キャルセドニ美術館』に隠された秘宝〜</p>
-        <p>名高い怪盗団”Ｘ”に入団するため、入団試験を受けにきたあなたたち。入団の条件として与えられたのはある美術館から、最も高価な美術品を盗み出すことだった。一人前の怪盗になるために、未熟なスキルを駆使して試験突破を目指そう。</p>
-        <p class="work-meta">人数 1チーム4人まで ／ 時間 90分程度</p>
-      </article>
-
-      <article class="work">
-        <h3>アス謎</h3>
-        <p>アストラムライン開業25周年記念事業。謎制作担当として携わった作品です。実際にアストラムラインに乗り、駅やその周辺を探索する周遊型の謎解きゲームです。「アス謎」をプレイすれば、新しいアストラムラインの魅力に出会うことができます。普段利用されている方にも、あまり利用の機会がない方にもおすすめです。</p>
-        <p class="work-meta">2019年7月20日〜10月27日 ／ 人数 1人から ／ 時間 3〜4時間 ／ 主催 広島高速交通株式会社</p>
-        <p><a href="https://www.asu-nazo.com">https://www.asu-nazo.com</a></p>
-      </article>
-
-      <article class="work">
-        <h3>リアル人狼ゲームからの脱出</h3>
-        <p>目が覚めると見知らぬ密室に閉じ込められたあなたたち。部屋にはモニターと人数分の椅子。「人狼ゲームで勝つか、謎を解かなければ死ぬ」。突如として理不尽にも始まるデスゲーム。あなたは生きてこの部屋から脱出することができるか。実際に人狼ゲームを進めながら、プレイヤーが減っていく中でクリアを目指すサスペンス型謎解きゲームです。</p>
-        <p class="work-meta">人数 7〜9人 ／ 時間 120分程度 ／ 1チームのみ。未経験の方には開始前に説明します。</p>
-      </article>
-
-      <article class="work">
-        <h3>ボードゲームカフェCOAST様</h3>
-        <p class="work-sub">ロゴマーク・ショップカード</p>
-        <p>広島市内初のボードゲームカフェ、coastのロゴ・ショップカードを制作しました。サイコロやゲームで使用するコマをモチーフに、ボードゲームを通して人と人の輪が広がっていって欲しいという想いを込めました。</p>
-      </article>
-
-      <article class="work">
-        <h3>ボードゲームカフェcoast様への開店記念品</h3>
-        <p>開店祝いとして、ボードゲーム用語を収録したオリジナルコースターを寄贈しました。全30種のコースターです。</p>
-      </article>
+    <section class="festival reveal" id="festival" aria-labelledby="festival-title">
+      <h2 id="festival-title">FESTIVAL</h2>
+      <p>全国から謎解き制作団体を誘致し、たくさんの謎解き公演が遊べるフェスイベント「ひろしま謎解きん祭」を定期開催。</p>
+      <p class="festival-next">次回は2027/1/16-17で開催決定！</p>
+      <p>詳細は随時更新していきます。</p>
+      <a class="text-link" href="/fes6/time-table/">タイムテーブルを開く</a>
     </section>
 
     <section class="contact reveal" id="contact" aria-labelledby="contact-title">
-      <h2 id="contact-title">お問い合わせ</h2>
-      <p class="contact-lead">お仕事のご相談・ご依頼は、これまでのお問い合わせページ、またはXのダイレクトメッセージにて受け付けております。</p>
-      <p>謎解きゲームに限らず、面白いことには首を突っ込みたいのでできるだけ頑張ります。なお、グループメンバー全員が社会人として本業をこなしながらの創作活動となっております。あらかじめご了承の上お問い合わせくださいませ。</p>
-      <a class="contact-link" href="https://tsukuru-exe.jimdofree.com/%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B/">お問い合わせフォームへ</a>
+      <h2 id="contact-title">CONTACT</h2>
+      <form class="mail-form" id="mail-form">
+        <label>お名前
+          <input name="name" type="text" required autocomplete="name">
+        </label>
+        <label>メールアドレス
+          <input name="from" type="email" required autocomplete="email">
+        </label>
+        <label>内容
+          <textarea name="message" rows="6" required></textarea>
+        </label>
+        <button type="submit">送る</button>
+        <p class="form-note">tsukuru.exe@gmail.com 宛のメールを開きます。</p>
+      </form>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <p>tsukuru-exe ／ つくるえぐぜ</p>
-    <a href="#fes">ひろしま謎解きん祭6</a>
-  </footer>
+  <dialog class="detail" id="detail" aria-labelledby="detail-title">
+    <button type="button" class="detail-close" id="detail-close">閉じる</button>
+    <div id="detail-body"></div>
+  </dialog>
+
   <script>
-    const nodes = document.querySelectorAll(".reveal:not(.hero)");
+    const detail = document.getElementById("detail");
+    const detailBody = document.getElementById("detail-body");
+    document.querySelectorAll(".card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const source = document.getElementById(card.dataset.detail);
+        if (!source) return;
+        detailBody.replaceChildren(source.cloneNode(true));
+        detailBody.firstElementChild.hidden = false;
+        const heading = detailBody.querySelector("h3");
+        if (heading) heading.id = "detail-title";
+        detail.showModal();
+      });
+    });
+    document.getElementById("detail-close").addEventListener("click", () => detail.close());
+    detail.addEventListener("click", (event) => {
+      if (event.target === detail) detail.close();
+    });
+
+    document.getElementById("mail-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const subject = encodeURIComponent("つくるえぐぜへの問い合わせ（" + data.get("name") + "）");
+      const body = encodeURIComponent(
+        "名前: " + data.get("name") + "\nメール: " + data.get("from") + "\n\n" + data.get("message")
+      );
+      location.href = "mailto:tsukuru.exe@gmail.com?subject=" + subject + "&body=" + body;
+    });
+
+    const nodes = document.querySelectorAll(".reveal");
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce || !("IntersectionObserver" in window)) {
       nodes.forEach((node) => node.classList.add("is-in"));
