@@ -26,7 +26,7 @@
   </header>
 
   <main id="main">
-    <section class="hero" aria-labelledby="hero-title">
+    <section class="hero reveal" aria-labelledby="hero-title">
       <p class="hero-kicker">広島を拠点に活動中</p>
       <h1 id="hero-title">つくるえぐぜ</h1>
       <p>謎解きゲームをメインに、様々な創作活動をする社会人チームです。</p>
@@ -34,7 +34,7 @@
       <p class="invite"><a href="#contact">お仕事のご依頼はお問合せからご連絡ください！</a></p>
     </section>
 
-    <section class="events" id="events" aria-labelledby="events-title">
+    <section class="events reveal" id="events" aria-labelledby="events-title">
       <div class="events-head">
         <p class="section-index">01</p>
         <h2 id="events-title">直近で開催したイベントはこちら！</h2>
@@ -73,15 +73,19 @@
       </article>
     </section>
 
-    <section class="fes" aria-labelledby="fes-title">
-      <p class="section-index">02</p>
-      <h2 id="fes-title">ひろしま謎解きん祭6</h2>
-      <p class="fes-date">2027.1.16<span>土</span> — 1.17<span>日</span></p>
-      <p class="fes-copy">当日のハシゴは、タイムテーブルで組み立てられます。</p>
-      <a class="fes-link" href="/fes6/time-table/">タイムテーブルを開く</a>
+    <section class="fes reveal" aria-labelledby="fes-title">
+      <div class="fes-inner">
+        <div>
+          <p class="section-index">02</p>
+          <h2 id="fes-title">ひろしま謎解きん祭6</h2>
+          <p class="fes-date">2027.1.16<span>土</span> — 1.17<span>日</span></p>
+          <p class="fes-note">当日のハシゴは、タイムテーブルで組み立てられます。</p>
+        </div>
+        <a class="fes-link" href="/fes6/time-table/">タイムテーブルを開く</a>
+      </div>
     </section>
 
-    <section class="contact" id="contact" aria-labelledby="contact-title">
+    <section class="contact reveal" id="contact" aria-labelledby="contact-title">
       <p class="section-index">03</p>
       <h2 id="contact-title">お問い合わせ</h2>
       <p class="contact-lead">お仕事のご相談・ご依頼は、これまでのお問い合わせページ、またはXのダイレクトメッセージにて受け付けております。</p>
@@ -90,9 +94,25 @@
     </section>
   </main>
 
-  <footer class="site-footer">
+  <footer class="site-footer reveal">
     <p>tsukuru-exe ／ つくるえぐぜ</p>
     <a href="https://tsukuru-exe.jimdofree.com/%E9%81%8E%E5%8E%BB%E3%81%AE%E4%BA%8B%E4%BE%8B-%E5%88%B6%E4%BD%9C%E7%89%A9/">過去の事例・制作物</a>
   </footer>
+  <script>
+    const nodes = document.querySelectorAll(".reveal:not(.hero)");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce || !("IntersectionObserver" in window)) {
+      nodes.forEach((node) => node.classList.add("is-in"));
+    } else {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-in");
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: 0.18 });
+      nodes.forEach((node) => observer.observe(node));
+    }
+  </script>
 </body>
 </html>
