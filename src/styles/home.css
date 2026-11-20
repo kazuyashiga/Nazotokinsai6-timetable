@@ -90,8 +90,9 @@ a { color: inherit; }
 }
 
 .hero,
+.about,
 .events,
-.fes,
+.works,
 .contact,
 .site-footer {
   padding-left: max(28px, 6vw);
@@ -99,25 +100,30 @@ a { color: inherit; }
 }
 
 .hero {
-  max-width: 920px;
-  padding-top: 12vh;
-  padding-bottom: 10vh;
+  max-width: none;
+  padding-top: 11vh;
+  padding-bottom: 9vh;
+  background: #111;
+  color: #fff;
 }
 
 .hero-kicker {
   margin: 0 0 18px;
-  color: var(--muted);
+  color: var(--teal);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.22em;
 }
 
+.about .hero-kicker { color: var(--muted); }
+
 .hero h1 {
-  margin: 0 0 22px;
+  margin: 0 0 18px;
+  max-width: 12em;
   font-weight: 900;
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
-  line-height: 1.15;
-  letter-spacing: 0.08em;
+  font-size: clamp(2.8rem, 6.4vw, 5rem);
+  line-height: 1.12;
+  letter-spacing: 0.04em;
 }
 
 .hero p {
@@ -148,10 +154,28 @@ a { color: inherit; }
 
 .events { padding-bottom: 4vh; }
 
-.events-head,
-.fes,
+.about,
+.events,
+.works,
 .contact {
   max-width: 920px;
+}
+
+.about {
+  padding-top: 72px;
+  padding-bottom: 24px;
+}
+
+.about h2 {
+  margin: 0 0 12px;
+  font-weight: 900;
+  font-size: 1.6rem;
+  letter-spacing: 0.06em;
+}
+
+.about p {
+  max-width: 36em;
+  margin: 0 0 8px;
 }
 
 .section-index {
@@ -163,7 +187,7 @@ a { color: inherit; }
 }
 
 .events-head h2,
-.fes h2,
+.works h2,
 .contact h2 {
   margin: 0 0 8px;
   font-weight: 700;
@@ -237,37 +261,72 @@ a { color: inherit; }
   letter-spacing: 0.14em;
 }
 
-.fes {
-  max-width: none;
-  padding-top: 48px;
-  padding-bottom: 48px;
+.fes-note {
+  margin: 0;
+  max-width: 28em;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 1.05rem;
+}
+
+.fes-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 32px;
+  min-height: 54px;
+  padding: 0 22px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.fes-link::after {
+  content: "→";
+  margin-left: 12px;
+  transition: transform 0.35s ease;
+}
+
+.fes-link:hover,
+.fes-link:focus-visible {
+  background: #fff;
+  color: #111;
+}
+
+.fes-link:hover::after,
+.fes-link:focus-visible::after {
+  transform: translateX(6px);
+}
+
+.works { padding-top: 28px; }
+
+.work {
+  padding: 22px 0;
   border-top: 1px solid var(--line);
 }
 
-.fes-inner {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  max-width: 920px;
+.work h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 900;
 }
 
-.fes-date {
-  margin: 8px 0 0;
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-}
-
-.fes-date span { margin-left: 0.15em; font-size: 0.8em; }
-
-.fes-note {
-  margin: 6px 0 0;
+.work-sub {
+  margin: -4px 0 8px;
   color: var(--muted);
   font-size: 0.92rem;
 }
 
-.fes-link,
+.work p { margin: 0 0 8px; }
+
+.work-meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.work a { color: var(--teal); }
+
 .contact-link {
   display: inline-flex;
   align-items: center;
@@ -276,26 +335,21 @@ a { color: inherit; }
   font-weight: 700;
   text-decoration: none;
   border-bottom: 1px solid var(--ink);
-  transition: color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
-.fes-link::after,
 .contact-link::after {
   content: "→";
   margin-left: 10px;
   transition: transform 0.35s ease;
 }
 
-.fes-link:hover,
-.fes-link:focus-visible,
 .contact-link:hover,
 .contact-link:focus-visible {
   color: var(--teal);
   border-color: var(--teal);
 }
 
-.fes-link:hover::after,
-.fes-link:focus-visible::after,
 .contact-link:hover::after,
 .contact-link:focus-visible::after {
   transform: translateX(6px);
@@ -360,7 +414,9 @@ a { color: inherit; }
 
   .site-nav { gap: 18px; }
 
-  .hero { padding-top: 8vh; }
+  .hero { padding-top: 7vh; padding-bottom: 7vh; }
+
+  .hero h1 { font-size: 2.4rem; }
 
   .event,
   .event-flip {
@@ -372,10 +428,6 @@ a { color: inherit; }
 
   .event figure { max-width: 220px; }
 
-  .fes-inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
